@@ -56,6 +56,7 @@ def init_db():
         );
         CREATE TABLE IF NOT EXISTS material_cost (
             material_id TEXT, date TEXT, material_name TEXT,
+            advertiser_id TEXT DEFAULT '',
             cost REAL DEFAULT 0, conversion_num INTEGER DEFAULT 0,
             show_count INTEGER DEFAULT 0, click INTEGER DEFAULT 0,
             cpm REAL DEFAULT 0, cpc REAL DEFAULT 0, ctr REAL DEFAULT 0,
@@ -94,17 +95,19 @@ def save_materials(conn, dt: str, items: list):
         if not mid:
             continue
         conn.execute("""
-            INSERT INTO material_cost (material_id,date,material_name,cost,conversion_num,show_count,click,cpm,cpc,ctr,convert_rate,convert_cost)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT INTO material_cost (material_id,date,material_name,advertiser_id,cost,conversion_num,show_count,click,cpm,cpc,ctr,convert_rate,convert_cost)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
             ON CONFLICT(material_id,date) DO UPDATE SET
-                material_name=excluded.material_name, cost=excluded.cost,
-                conversion_num=excluded.conversion_num, show_count=excluded.show_count,
-                click=excluded.click, cpm=excluded.cpm, cpc=excluded.cpc,
-                ctr=excluded.ctr, convert_rate=excluded.convert_rate,
-                convert_cost=excluded.convert_cost, updated_at=datetime('now')
-        """, (mid, dt, item.get("material_name", ""), item.get("cost", 0),
-              item.get("conversion_num", 0), item.get("show_count", 0),
-              item.get("click", 0), item.get("cpm", 0), item.get("cpc", 0),
+                material_name=excluded.material_name, advertiser_id=excluded.advertiser_id,
+                cost=excluded.cost, conversion_num=excluded.conversion_num,
+                show_count=excluded.show_count, click=excluded.click,
+                cpm=excluded.cpm, cpc=excluded.cpc, ctr=excluded.ctr,
+                convert_rate=excluded.convert_rate, convert_cost=excluded.convert_cost,
+                updated_at=datetime('now')
+        """, (mid, dt, item.get("material_name", ""), item.get("advertiser_id", ""),
+              item.get("cost", 0), item.get("conversion_num", 0),
+              item.get("show_count", 0), item.get("click", 0),
+              item.get("cpm", 0), item.get("cpc", 0),
               item.get("ctr", 0), item.get("convert_rate", 0), item.get("convert_cost", 0)))
 
 
