@@ -207,8 +207,8 @@ KPIS = ["cost","conversion_num","show_count","click","cpm","cpc","ctr",
         "convert_rate","convert_cost","active","active_cost","active_rate",
         "download_start","download_finish","install_finish"]
 
-CONCURRENT_PAGES = 5   # 并发拉取页数（避免 API 限流）
-PAGE_TIMEOUT = 30      # 单页超时秒
+CONCURRENT_PAGES = 3   # 并发拉取页数（避免 API 限流）
+PAGE_TIMEOUT = 60      # 单页超时秒
 
 BASE_PAYLOAD = {
     "time_dim": "days", "media_type": "aggregate",

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobgi 素材数据面板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0f; color: #e0e0e5; font-family: -apple-system, 'Segoe UI', sans-serif; padding: 20px; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .header h1 { font-size: 20px; font-weight: 700; color: #fff; }
+  .header .date { font-size: 13px; color: #888; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .kpi-card { background: #141418; border: 1px solid #2a2a35; border-radius: 10px; padding: 14px 16px; }
+  .kpi-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 700; color: #fff; }
+  .kpi-value .unit { font-size: 14px; color: #aaa; font-weight: 400; }
+  .kpi-diff { font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+  .kpi-diff.up { color: #ef4444; }
+  .kpi-diff.down { color: #22c55e; }
+  .kpi-diff.flat { color: #666; }
+  .kpi-diff .arrow { font-size: 14px; }
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .chart-box { background: #141418; border: 1px solid #2a2a35; border-radius: 10px; padding: 16px; }
+  .chart-box h3 { font-size: 14px; font-weight: 600; color: #ccc; margin-bottom: 12px; }
+  .chart { width: 100%; height: 300px; }
+  .chart-lg { height: 360px; }
+  .full-width { grid-column: 1 / -1; }
+  .balance-card { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border: 1px solid #4338ca; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .balance-label { font-size: 13px; color: #a5b4fc; }
+  .balance-value { font-size: 28px; font-weight: 700; color: #fff; }
+  .update-time { font-size: 11px; color: #555; text-align: right; margin-top: 16px; }
+  @media (max-width: 768px) { .charts-row { grid-template-columns: 1fr; } .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 Mobgi 素材数据面板</h1>
+  <div class="date">数据日期: 2026-05-31 | 对比: 2026-05-30</div>
+</div>
+
+
+
+<div class="kpi-grid" id="kpiGrid"></div>
+
+<div class="charts-row">
+  <div class="chart-box">
+    <h3>📈 每日消耗趋势</h3>
+    <div class="chart" id="trendChart"></div>
+  </div>
+  <div class="chart-box">
+    <h3>📊 每日转化趋势</h3>
+    <div class="chart" id="convChart"></div>
+  </div>
+</div>
+
+<div class="charts-row">
+  <div class="chart-box full-width">
+    <h3>🏆 素材消耗排行 TOP 20</h3>
+    <div class="chart chart-lg" id="rankChart"></div>
+  </div>
+</div>
+
+<div class="charts-row">
+  <div class="chart-box full-width">
+    <h3>💡 消耗 vs 转化散点图（TOP 100）</h3>
+    <div class="chart chart-lg" id="scatterChart"></div>
+  </div>
+</div>
+
+<div class="update-time" id="updateTime"></div>
+
+<script>
+const dates = ["2026-05-30", "2026-05-31"];
+const costSeries = [136664.09, 145861.34];
+const convSeries = [4605, 5012];
+const ctrSeries = [5.1427, 5.0013];
+const kpis = [{"label": "总花费", "value": 145861.34, "unit": "¥", "diff": 9197.25, "pct": 6.73, "direction": "up", "decimals": 2}, {"label": "转化数", "value": 5012, "unit": "", "diff": 407, "pct": 8.84, "direction": "up", "decimals": 0}, {"label": "展示数", "value": 2894092, "unit": "", "diff": 28702, "pct": 1.0, "direction": "up", "decimals": 0}, {"label": "点击数", "value": 144741, "unit": "", "diff": -2617, "pct": -1.78, "direction": "down", "decimals": 0}, {"label": "CTR", "value": 5.0013, "unit": "%", "diff": -0.14, "pct": -2.75, "direction": "down", "decimals": 4}, {"label": "转化率", "value": 3.4627, "unit": "%", "diff": 0.34, "pct": 10.81, "direction": "up", "decimals": 4}, {"label": "CPM", "value": 50.3997, "unit": "¥", "diff": 2.7, "pct": 5.67, "direction": "up", "decimals": 4}, {"label": "CPC", "value": 1.0077, "unit": "¥", "diff": 0.08, "pct": 8.66, "direction": "up", "decimals": 4}, {"label": "转化成本", "value": 29.1024, "unit": "¥", "diff": -0.57, "pct": -1.94, "direction": "down", "decimals": 4}];
+const topNames = ["番茄小说-纯激励-解压视频+激励点-竖-", "番茄小说-纯激励-解压视频+激励点-竖-", "红果短剧-纯激励-解压视频+激励点-竖-", "红果短剧-纯短剧-夺卿欢-BSL-lc-", "番茄小说-纯激励-解压视频+激励点-竖-", "红果短剧-纯激励-解压视频+激励点-竖-", "红果短剧-纯激励-解压视频+激励点-竖-", "红果短剧-纯短剧-夺卿欢-BSL-lk-", "番茄小说-纯激励-解压视频+激励点-竖-", "红果短剧-纯激励-解压视频+激励点-竖-", "红果短剧-纯激励-解压视频+激励点-竖-", "红果短剧-纯激励-解压视频+激励点-竖-", "红果短剧-纯激励-解压视频+激励点-竖-", "番茄小说-纯激励-解压视频+激励点-竖-", "红果短剧-纯激励-解压视频+激励点-竖-", "红果短剧-纯激励-解压视频+激励点-竖-", "红果短剧-纯激励-解压视频+激励点-竖-", "红果短剧-纯短剧-定制剧-夺卿欢-BSL", "红果短剧-纯短剧-夺卿欢-BSL-jyf", "红果短剧-现代-豪门月嫂，一不小心成了全"];
+const topCosts = [886.69, 647.59, 634.39, 454.37, 447.0, 382.9, 351.72, 351.28, 242.54, 237.38, 233.88, 223.01, 215.25, 197.45, 151.89, 140.16, 129.53, 100.67, 91.88, 90.08];
+const topConvs = [53, 9, 19, 12, 24, 8, 9, 11, 3, 3, 4, 4, 3, 3, 3, 3, 2, 2, 4, 3];
+const topCtrs = ["11.46%", "2.17%", "8.56%", "1.97%", "9.87%", "1.86%", "7.10%", "3.08%", "2.76%", "1.37%", "5.44%", "15.36%", "3.30%", "1.64%", "3.43%", "11.22%", "3.38%", "3.68%", "3.46%", "6.43%"];
+const scatterData = [[886.69, 53, "11.46%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (164)", 16.73], [647.59, 9, "2.17%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (179)", 71.95], [634.39, 19, "8.56%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (27)", 33.39], [454.37, 12, "1.97%", "红果短剧-纯短剧-夺卿欢-BSL-lc-0313-014", 37.86], [447.0, 24, "9.87%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (75)", 18.63], [382.9, 8, "1.86%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (59)", 47.86], [351.72, 9, "7.10%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (75)", 39.08], [351.28, 11, "3.08%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-64", 31.93], [242.54, 3, "2.76%", "番茄小说-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横算炼 (17)", 80.85], [237.38, 3, "1.37%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (74)", 79.13], [233.88, 4, "5.44%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (41)", 58.47], [223.01, 4, "15.36%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (83)", 55.75], [215.25, 3, "3.30%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (57)", 71.75], [197.45, 3, "1.64%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (107)", 65.82], [151.89, 3, "3.43%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横宁波  (233)", 50.63], [140.16, 3, "11.22%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横宁波  (61)", 46.72], [129.53, 2, "3.38%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (52)", 64.77], [100.67, 2, "3.68%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 (4)", 50.34], [91.88, 4, "3.46%", "红果短剧-纯短剧-夺卿欢-BSL-jyf-0321-13", 22.97], [90.08, 3, "6.43%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪+激励-1+-260401-JMM-纵横宁波-2", 30.03], [85.29, 1, "7.34%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-1+-激励-260402-ZYY-纵横宁波-2", 85.29], [83.65, 3, "7.01%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-1+-激励-260402-ZYY-纵横宁波-4", 27.88], [78.93, 3, "6.94%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪+激励-01-260401-JMM-纵横宁波-1", 26.31], [76.32, 2, "5.94%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (180)", 38.16], [71.62, 3, "1.76%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 (27)", 23.87], [69.28, 1, "6.62%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-1+-激励-260402-ZYY-纵横宁波-1", 69.28], [68.82, 1, "2.77%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-87", 68.82], [67.76, 1, "2.76%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-57", 67.76], [67.4, 1, "2.21%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横宁波  (226)", 67.4], [65.68, 5, "27.41%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (101)", 13.14], [63.47, 2, "5.32%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0324-33", 31.74], [62.15, 1, "5.29%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0330-15", 62.15], [61.37, 3, "2.12%", "红果短剧-纯短剧-夺卿欢-BSL-jyf-0321-12", 20.46], [61.27, 1, "4.99%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0324-7", 61.27], [61.22, 1, "2.11%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-2", 61.22], [50.25, 1, "1.51%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-8", 50.25], [42.16, 0, "1.51%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (47)", 0.0], [42.11, 2, "1.43%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-79", 21.06], [41.59, 0, "1.73%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (8)", 0.0], [39.12, 2, "7.71%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-1+-260331-QSN-纵横宁波-2", 19.56], [38.51, 0, "6.68%", "红果短剧-现代-曼陀罗-解说混剪-1+-260330-QSN-纵横宁波-2", 0.0], [38.09, 1, "2.36%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-33", 38.09], [37.76, 0, "2.31%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-38", 0.0], [35.28, 1, "6.76%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 (24)", 35.28], [34.5, 0, "1.14%", "红果短剧-纯短剧-夺卿欢-BSL-jyf-0321-15", 0.0], [34.07, 1, "4.88%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-9", 34.07], [32.61, 1, "4.05%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (23)", 32.61], [31.31, 1, "6.57%", "红果短剧-纯短剧-现代-曼陀罗-BSL-jyf-0331-63", 31.31], [30.68, 0, "5.52%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪+激励-1+-260401-JMM-纵横宁波-3", 0.0], [30.64, 1, "6.42%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-5+-260331-QSN-纵横宁波-4", 30.64], [30.29, 0, "2.93%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 (22)", 0.0], [29.67, 0, "3.20%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 (16)", 0.0], [28.89, 0, "7.21%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-1+-260331-QSN-纵横宁波-3", 0.0], [28.83, 0, "2.28%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-15", 0.0], [27.53, 0, "4.27%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0330-37", 0.0], [26.55, 0, "4.97%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-1+-260331-QSN-纵横宁波-5", 0.0], [25.75, 3, "4.10%", "红果短剧-现代-一品布衣4：割据篇-原片混剪-1+-0407-WYT-纵横宁波2", 8.58], [25.68, 3, "4.61%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0321-4", 8.56], [25.55, 1, "1.11%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-4", 25.55], [24.81, 1, "1.44%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-23", 24.81], [24.53, 0, "3.21%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 (14)", 0.0], [24.33, 2, "1.82%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-81", 12.17], [23.71, 1, "5.36%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 (15)", 23.71], [23.64, 0, "6.10%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-34", 0.0], [23.28, 0, "2.91%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0330-1", 0.0], [22.33, 2, "6.75%", "红果短剧-纯短剧-现代-曼陀罗-BSL-jyf-0408-8", 11.17], [21.07, 0, "2.32%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-72", 0.0], [20.38, 1, "2.41%", "红果短剧-纯短剧-夺卿欢-BSL-lc-0313-015", 20.38], [19.76, 0, "2.66%", "狸鸣红果-激励-lm-红果短剧-0204-lk-ys2-0204-5018", 0.0], [18.59, 0, "2.86%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (72)", 0.0], [17.88, 0, "6.55%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-52", 0.0], [17.56, 1, "4.78%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0321-15", 17.56], [17.51, 0, "8.44%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-AIHC-竖-260320-JMM-纵横宁波34", 0.0], [17.31, 0, "14.77%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-AIHC-竖-260320-JMM-纵横宁波27", 0.0], [17.09, 0, "17.36%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-原片混剪-竖-260319-MN-纵横宁波-4", 0.0], [16.35, 1, "4.52%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横宁波  (44)", 16.35], [16.04, 1, "3.62%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横宁波  (96)", 16.04], [15.29, 1, "6.62%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-56", 15.29], [14.69, 0, "2.62%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-18", 0.0], [14.58, 1, "4.75%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0318-30", 14.58], [14.41, 1, "4.65%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0330-31", 14.41], [13.89, 0, "5.23%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (89)", 0.0], [13.63, 0, "5.65%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (67)", 0.0], [13.36, 1, "5.46%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横宁波  (199)", 13.36], [13.09, 0, "4.55%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0330-30", 0.0], [12.96, 0, "5.28%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-85", 0.0], [11.9, 1, "4.12%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横宁波  (236)", 11.9], [11.59, 0, "11.34%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-原片混剪-竖-260319-LY-纵横宁波-2", 0.0], [11.57, 0, "9.30%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-原片混剪-竖-260319-ZYY-纵横宁波-4", 0.0], [11.47, 1, "4.10%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-29", 11.47], [11.24, 2, "3.97%", "红果短剧-纯短剧-假千金真替罪-BSL-mcy写-317-定制剧 (30)", 5.62], [11.03, 0, "2.99%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 (20)", 0.0], [10.8, 0, "4.40%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (11)", 0.0], [10.53, 0, "3.60%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0324-13", 0.0], [10.4, 0, "9.68%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (122)", 0.0], [9.44, 0, "10.00%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-原片混剪-竖-260319-LY-纵横宁波-1", 0.0], [9.1, 0, "4.50%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (11)", 0.0], [9.06, 0, "6.88%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-68", 0.0], [8.84, 1, "4.78%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0318-18", 8.84], [8.5, 0, "33.33%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (90)", 0.0]];
+
+// ─── KPI 卡片 ─────────────────────────────────────────────────
+const kpiGrid = document.getElementById('kpiGrid');
+kpiCards = kpis.map(k => {
+  const arrow = k.direction === 'up' ? '↑' : (k.direction === 'down' ? '↓' : '→');
+  const sign = k.diff > 0 ? '+' : '';
+  const pctStr = k.pct !== null ? ` (${sign}${k.pct}%)` : '';
+  const diffColor = k.direction === 'up' ? '#ef4444' : (k.direction === 'down' ? '#22c55e' : '#666');
+  return `
+    <div class="kpi-card">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.unit}${k.value.toLocaleString(undefined, {minimumFractionDigits: k.decimals, maximumFractionDigits: k.decimals})}</div>
+      <div class="kpi-diff ${k.direction}">
+        <span class="arrow">${arrow}</span>
+        <span>${sign}${Math.abs(k.diff).toLocaleString()}${pctStr}</span>
+      </div>
+    </div>
+  `;
+});
+kpiGrid.innerHTML = kpiCards.join('');
+
+// ─── 消耗趋势 ─────────────────────────────────────────────────
+const trendChart = echarts.init(document.getElementById('trendChart'));
+trendChart.setOption({
+  backgroundColor: 'transparent',
+  tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+  grid: { left: 50, right: 20, top: 10, bottom: 30 },
+  xAxis: { type: 'category', data: dates, axisLine: { lineStyle: { color: '#333' } }, axisLabel: { color: '#888', fontSize: 10 } },
+  yAxis: [
+    { type: 'value', name: '花费', axisLabel: { color: '#888', fontSize: 10, formatter: v => '¥' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) }, splitLine: { lineStyle: { color: '#1a1a25' } } },
+    { type: 'value', name: 'CTR%', axisLabel: { color: '#888', fontSize: 10, formatter: v => v + '%' }, splitLine: { show: false } }
+  ],
+  series: [
+    { name: '花费', type: 'bar', data: costSeries, itemStyle: { color: '#6366f1' }, barMaxWidth: 20 },
+    { name: 'CTR', type: 'line', yAxisIndex: 1, data: ctrSeries, itemStyle: { color: '#f59e0b' }, lineStyle: { width: 2 }, symbol: 'circle', symbolSize: 4 }
+  ]
+});
+
+// ─── 转化趋势 ─────────────────────────────────────────────────
+const convChart = echarts.init(document.getElementById('convChart'));
+convChart.setOption({
+  backgroundColor: 'transparent',
+  tooltip: { trigger: 'axis' },
+  grid: { left: 50, right: 20, top: 10, bottom: 30 },
+  xAxis: { type: 'category', data: dates, axisLine: { lineStyle: { color: '#333' } }, axisLabel: { color: '#888', fontSize: 10 } },
+  yAxis: [
+    { type: 'value', name: '转化数', axisLabel: { color: '#888', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a1a25' } } },
+    { type: 'value', name: '点击', axisLabel: { color: '#888', fontSize: 10 }, splitLine: { show: false } }
+  ],
+  series: [
+    { name: '转化数', type: 'bar', data: convSeries, itemStyle: { color: '#22c55e' }, barMaxWidth: 20 },
+    { name: '点击', type: 'line', yAxisIndex: 1, data: [147358, 144741], itemStyle: { color: '#3b82f6' }, lineStyle: { width: 2 }, symbol: 'circle', symbolSize: 4 }
+  ]
+});
+
+// ─── 素材排行 ─────────────────────────────────────────────────
+const rankChart = echarts.init(document.getElementById('rankChart'));
+rankChart.setOption({
+  backgroundColor: 'transparent',
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+  legend: { data: ['花费', '转化数'], textStyle: { color: '#888' }, top: 0 },
+  grid: { left: 20, right: 20, top: 30, bottom: 20, containLabel: true },
+  xAxis: { type: 'value', axisLabel: { color: '#888', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a1a25' } } },
+  yAxis: { type: 'category', data: topNames.reverse(), axisLabel: { color: '#ccc', fontSize: 11, width: 140, overflow: 'truncate' } },
+  series: [
+    { name: '花费', type: 'bar', data: topCosts.reverse(), itemStyle: { color: '#6366f1', borderRadius: [0, 4, 4, 0] }, barMaxWidth: 16 },
+    { name: '转化数', type: 'bar', data: topConvs.reverse(), itemStyle: { color: '#22c55e', borderRadius: [0, 4, 4, 0] }, barMaxWidth: 16 }
+  ]
+});
+
+// ─── 散点图 ───────────────────────────────────────────────────
+const scatterChart = echarts.init(document.getElementById('scatterChart'));
+scatterChart.setOption({
+  backgroundColor: 'transparent',
+  tooltip: {
+    trigger: 'item',
+    formatter: p => `<b>${p.data[3]}</b><br/>花费: ¥${p.data[0].toLocaleString()}<br/>转化: ${p.data[1]}<br/>CTR: ${p.data[2]}%<br/>转化成本: ¥${p.data[4].toFixed(2)}`
+  },
+  grid: { left: 60, right: 20, top: 10, bottom: 30 },
+  xAxis: { name: '花费', nameTextStyle: { color: '#888' }, axisLabel: { color: '#888', fontSize: 10, formatter: v => '¥' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) }, splitLine: { lineStyle: { color: '#1a1a25' } } },
+  yAxis: { name: '转化数', nameTextStyle: { color: '#888' }, axisLabel: { color: '#888', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a1a25' } } },
+  series: [{
+    type: 'scatter',
+    data: scatterData,
+    symbolSize: d => Math.max(6, Math.min(30, d[0] / 50)),
+    itemStyle: {
+      color: d => {
+        const ctr = d[2];
+        if (ctr > 8) return '#22c55e';
+        if (ctr > 4) return '#f59e0b';
+        return '#ef4444';
+      },
+      opacity: 0.8
+    }
+  }]
+});
+
+// 响应式
+window.addEventListener('resize', () => {
+  trendChart.resize(); convChart.resize(); rankChart.resize(); scatterChart.resize();
+});
+
+document.getElementById('updateTime').textContent = '更新时间: ' + new().toLocaleString('zh-CN');
+</script>
+</body>
+</html>
