@@ -6,3 +6,7 @@ dist/
 build/
 .venv/
 venv/
+# 数据文件（不提交）
+data/
+*.db
+!.env.example
