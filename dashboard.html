@@ -3,325 +3,483 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mobgi 素材数据面板</title>
+<title>Mobgi BI 看板</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #0a0a0f; color: #e0e0e5; font-family: -apple-system, 'Segoe UI', sans-serif; padding: 16px; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
-.header h1 { font-size: 18px; font-weight: 700; color: #fff; }
-.header .date { font-size: 12px; color: #888; }
-.balance-card { background: linear-gradient(135deg, #1e1b4b, #312e81); border: 1px solid #4338ca; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-.balance-label { font-size: 13px; color: #a5b4fc; }
-.balance-value { font-size: 24px; font-weight: 700; color: #fff; }
-.section { margin-bottom: 16px; }
-.section-title { font-size: 14px; font-weight: 600; color: #ccc; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-.tab-group { display: flex; gap: 4px; margin-left: auto; }
-.tab { padding: 4px 12px; border-radius: 6px; border: 1px solid #333; background: #1a1a25; color: #888; font-size: 12px; cursor: pointer; transition: all .2s; }
-.tab:hover { border-color: #555; color: #ccc; }
-.tab.active { background: #6366f1; border-color: #6366f1; color: #fff; }
-.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.chart-box { background: #141418; border: 1px solid #2a2a35; border-radius: 10px; padding: 12px; }
-.chart-box h3 { font-size: 13px; font-weight: 600; color: #aaa; margin-bottom: 8px; }
-.chart { width: 100%; height: 280px; }
+:root {
+  --bg: #0B1220;
+  --card: rgba(15,23,42,0.6);
+  --card-border: rgba(99,102,241,0.15);
+  --text: #e2e8f0;
+  --text-dim: #64748b;
+  --accent: #6366f1;
+  --accent2: #8b5cf6;
+  --green: #22c55e;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --glass: rgba(255,255,255,0.03);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif;
+  font-size: 13px;
+  min-height: 100vh;
+  background-image: radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.08) 0%, transparent 50%),
+                    radial-gradient(ellipse at 80% 100%, rgba(139,92,246,0.06) 0%, transparent 50%);
+}
+
+/* ── Header ── */
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 24px; border-bottom: 1px solid rgba(99,102,241,0.1);
+  backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100;
+  background: rgba(11,18,32,0.8);
+}
+.header h1 { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.date-badge { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); border-radius: 8px; padding: 4px 12px; font-size: 12px; color: #a5b4fc; }
+.balance-pill { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2)); border: 1px solid rgba(99,102,241,0.3); border-radius: 8px; padding: 6px 14px; display: flex; align-items: center; gap: 8px; }
+.balance-label { font-size: 11px; color: #a5b4fc; }
+.balance-val { font-size: 16px; font-weight: 700; color: #fff; }
+
+/* ── Filters ── */
+.filters {
+  display: flex; gap: 8px; padding: 12px 24px; flex-wrap: wrap;
+  border-bottom: 1px solid rgba(99,102,241,0.08);
+}
+.filter-select {
+  background: rgba(15,23,42,0.8); border: 1px solid rgba(99,102,241,0.2); border-radius: 8px;
+  color: var(--text); padding: 6px 12px; font-size: 12px; outline: none; cursor: pointer;
+  appearance: none; min-width: 120px;
+}
+.filter-select:focus { border-color: var(--accent); }
+.filter-select option { background: #0f172a; }
+
+/* ── KPI Cards ── */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px; padding: 16px 24px;
+}
+.kpi-card {
+  background: var(--card); border: 1px solid var(--card-border); border-radius: 12px;
+  padding: 14px 16px; backdrop-filter: blur(12px);
+  position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  opacity: 0.5;
+}
+.kpi-label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+.kpi-value { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+.kpi-value .unit { font-size: 13px; color: var(--text-dim); font-weight: 400; }
+.kpi-diff { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+.kpi-diff.up { color: var(--red); }
+.kpi-diff.down { color: var(--green); }
+.kpi-diff.flat { color: var(--text-dim); }
+
+/* ── Section ── */
+.section { padding: 0 24px 20px; }
+.section-title {
+  font-size: 14px; font-weight: 600; color: #cbd5e1; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::before { content: ''; width: 3px; height: 14px; background: linear-gradient(180deg, var(--accent), var(--accent2)); border-radius: 2px; }
+
+/* ── Charts ── */
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.chart-box {
+  background: var(--card); border: 1px solid var(--card-border); border-radius: 12px;
+  padding: 14px; backdrop-filter: blur(12px);
+}
+.chart-box h4 { font-size: 12px; font-weight: 600; color: var(--text-dim); margin-bottom: 8px; }
+.chart { width: 100%; height: 260px; }
 .chart-lg { height: 340px; }
+.chart-xl { height: 420px; }
 .full-width { grid-column: 1 / -1; }
+
+/* ── Table ── */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
-th { background: #1a1a25; color: #888; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
-td { padding: 7px 10px; border-bottom: 1px solid #1a1a25; color: #ccc; white-space: nowrap; }
-tr:hover td { background: #1a1a25; }
+th { background: rgba(99,102,241,0.08); color: var(--text-dim); padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; position: sticky; top: 0; }
+td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.03); color: #cbd5e1; white-space: nowrap; }
+tr:hover td { background: rgba(99,102,241,0.05); }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
-.money { color: #f59e0b; }
-.up { color: #ef4444; }
-.down { color: #22c55e; }
+.money { color: var(--yellow); }
+.green { color: var(--green); }
+.red { color: var(--red); }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-.badge-tomato { background: #7f1d1d; color: #fca5a5; }
-.badge-redfruit { background: #14532d; color: #86efac; }
-.badge-other { background: #1e1b4b; color: #a5b4fc; }
-.update-time { font-size: 11px; color: #555; text-align: right; margin-top: 12px; }
-@media (max-width: 768px) { .charts-row { grid-template-columns: 1fr; } }
+.badge-tomato { background: rgba(239,68,68,0.15); color: #fca5a5; }
+.badge-redfruit { background: rgba(34,197,94,0.15); color: #86efac; }
+.badge-other { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+
+/* ── Platform Table ── */
+.platform-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px; margin-bottom: 12px;
+}
+.platform-card {
+  background: var(--card); border: 1px solid var(--card-border); border-radius: 12px;
+  padding: 14px; text-align: center;
+}
+.platform-name { font-size: 13px; font-weight: 600; color: #a5b4fc; margin-bottom: 8px; }
+.platform-cost { font-size: 20px; font-weight: 700; color: #fff; }
+.platform-ctr { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .charts-row { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .header { padding: 12px 16px; }
+  .section { padding: 0 16px 16px; }
+  .filters { padding: 10px 16px; }
+}
 </style>
 </head>
 <body>
 
+<!-- ── Header ── -->
 <div class="header">
-    <h1>📊 Mobgi 素材数据面板</h1>
-    <div class="date">数据日期: 2026-05-31</div>
+  <h1>📊 Mobgi BI 看板</h1>
+  <div class="header-right">
+    
+    <div class="date-badge" id="dateBadge">加载中...</div>
+  </div>
 </div>
 
-
-
-<!-- ─── 趋势图 ─────────────────────────────────────────────── -->
-<div class="section">
-    <div class="section-title">📈 每日趋势</div>
-    <div class="charts-row">
-        <div class="chart-box">
-            <h3>消耗趋势</h3>
-            <div class="chart" id="trendChart"></div>
-        </div>
-        <div class="chart-box">
-            <h3>转化趋势</h3>
-            <div class="chart" id="convChart"></div>
-        </div>
-    </div>
+<!-- ── Filters ── -->
+<div class="filters">
+  <select class="filter-select" id="filterTime" onchange="applyFilters()">
+    <option value="today">今天</option>
+    <option value="yesterday">昨天</option>
+    <option value="7d" selected>近7天</option>
+    <option value="30d">近30天</option>
+  </select>
+  <select class="filter-select" id="filterProduct" onchange="applyFilters()">
+    <option value="">全部产品</option>
+  </select>
+  <select class="filter-select" id="filterAdvertiser" onchange="applyFilters()">
+    <option value="">全部账户</option>
+  </select>
 </div>
 
-<!-- ─── 主体维度 ───────────────────────────────────────────── -->
+<!-- ── KPI 区 ── -->
+<div class="kpi-grid" id="kpiGrid"></div>
+
+<!-- ── 趋势图 ── -->
 <div class="section">
-    <div class="section-title">
-        🏢 按广告主体
-        <div class="tab-group">
-            <div class="tab active" onclick="switchAdvTab(this, 'cost')">按花费</div>
-            <div class="tab" onclick="switchAdvTab(this, 'conv')">按转化</div>
-        </div>
+  <div class="section-title">📈 消耗 & 转化趋势</div>
+  <div class="charts-row">
+    <div class="chart-box">
+      <h4>每日消耗</h4>
+      <div class="chart" id="trendCost"></div>
     </div>
     <div class="chart-box">
-        <div class="chart" id="advChart"></div>
+      <h4>每日转化</h4>
+      <div class="chart" id="trendConv"></div>
     </div>
-    <div class="table-wrap" style="margin-top:10px">
-        <table>
-            <thead><tr><th>广告主ID</th><th>素材数</th><th class="num">花费</th><th class="num">转化</th><th class="num">展示</th><th class="num">点击</th><th class="num">CTR</th><th class="num">转化率</th><th class="num">CPM</th><th class="num">CPC</th></tr></thead>
-            <tbody id="advTable"></tbody>
-        </table>
-    </div>
+  </div>
 </div>
 
-<!-- ─── 产品维度 ───────────────────────────────────────────── -->
+<!-- ── 产品维度 ── -->
 <div class="section">
-    <div class="section-title">🎯 按产品</div>
-    <div class="charts-row">
-        <div class="chart-box">
-            <h3>各产品花费占比</h3>
-            <div class="chart" id="prodPieChart"></div>
-        </div>
-        <div class="chart-box">
-            <h3>各产品消耗对比</h3>
-            <div class="chart" id="prodBarChart"></div>
-        </div>
+  <div class="section-title">🎯 产品维度分析</div>
+  <div class="charts-row">
+    <div class="chart-box">
+      <h4>产品消耗占比</h4>
+      <div class="chart" id="prodPie"></div>
     </div>
-    <div class="table-wrap" style="margin-top:10px">
-        <table>
-            <thead><tr><th>产品</th><th>素材数</th><th class="num">花费</th><th class="num">转化</th><th class="num">展示</th><th class="num">点击</th><th class="num">CTR</th><th class="num">转化率</th><th class="num">CPM</th><th class="num">CPC</th></tr></thead>
-            <tbody id="prodTable"></tbody>
-        </table>
+    <div class="chart-box">
+      <h4>产品消耗 & 转化</h4>
+      <div class="chart" id="prodBar"></div>
     </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>产品</th><th class="num">素材数</th><th class="num">消耗</th><th class="num">转化</th><th class="num">展示</th><th class="num">点击</th><th class="num">CTR</th><th class="num">转化率</th><th class="num">CPM</th><th class="num">CPC</th></tr></thead>
+      <tbody id="prodTable"></tbody>
+    </table>
+  </div>
 </div>
 
-<!-- ─── 素材排行 ───────────────────────────────────────────── -->
+<!-- ── 广告主维度 ── -->
 <div class="section">
-    <div class="section-title">🏆 素材消耗排行 TOP 20</div>
-    <div class="chart-box full-width">
-        <div class="chart chart-lg" id="rankChart"></div>
-    </div>
+  <div class="section-title">🏢 广告主维度（TOP 20）</div>
+  <div class="chart-box" style="margin-bottom:12px">
+    <h4>TOP 5 广告主消耗趋势</h4>
+    <div class="chart" id="advTrendChart"></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>广告主</th><th class="num">素材数</th><th class="num">消耗</th><th class="num">转化</th><th class="num">展示</th><th class="num">点击</th><th class="num">CTR</th><th class="num">转化率</th><th class="num">CPM</th><th class="num">CPC</th></tr></thead>
+      <tbody id="advTable"></tbody>
+    </table>
+  </div>
 </div>
 
-<!-- ─── 散点图 ─────────────────────────────────────────────── -->
+<!-- ── 素材排行 ── -->
 <div class="section">
-    <div class="section-title">💡 消耗 vs 转化（TOP 100）</div>
-    <div class="chart-box full-width">
-        <div class="chart chart-lg" id="scatterChart"></div>
-    </div>
+  <div class="section-title">🏆 素材消耗排行 TOP 30</div>
+  <div class="chart-box" style="margin-bottom:12px">
+    <h4>TOP 20 素材</h4>
+    <div class="chart chart-xl" id="rankChart"></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>素材名称</th><th>产品</th><th class="num">消耗</th><th class="num">转化</th><th class="num">展示</th><th class="num">点击</th><th class="num">CTR</th><th class="num">转化率</th><th class="num">CPC</th></tr></thead>
+      <tbody id="matTable"></tbody>
+    </table>
+  </div>
 </div>
 
-<div class="update-time" id="updateTime"></div>
+<!-- ── 散点图 ── -->
+<div class="section">
+  <div class="section-title">💡 消耗 vs 转化（TOP 100）</div>
+  <div class="chart-box">
+    <div class="chart chart-xl" id="scatterChart"></div>
+  </div>
+</div>
+
+<div style="text-align:center; padding:20px; color:#333; font-size:11px;" id="updateTime"></div>
 
 <script>
-const dates = ["2026-05-31"];
-const costSeries = [145861.34];
-const convSeries = [5012];
-const clickSeries = [144741];
-const ctrSeries = [5.0013];
-const byAdv = [{"advertiser_id": "1863703913752650", "total_cost": 1981.2800000000002, "total_conversion": 86, "total_show": 29463, "total_click": 1837, "material_count": 3}, {"advertiser_id": "1856262671930375", "total_cost": 647.24, "total_conversion": 15, "total_show": 13298, "total_click": 441, "material_count": 12}, {"advertiser_id": "1865579391321091", "total_cost": 634.39, "total_conversion": 19, "total_show": 11296, "total_click": 967, "material_count": 1}, {"advertiser_id": "1865579483739209", "total_cost": 620.14, "total_conversion": 15, "total_show": 5941, "total_click": 328, "material_count": 7}, {"advertiser_id": "1856262195213322", "total_cost": 563.11, "total_conversion": 14, "total_show": 17013, "total_click": 1153, "material_count": 10}, {"advertiser_id": "1856262110086483", "total_cost": 474.75, "total_conversion": 13, "total_show": 8098, "total_click": 162, "material_count": 2}, {"advertiser_id": "1865579496531977", "total_cost": 408.02, "total_conversion": 8, "total_show": 4606, "total_click": 101, "material_count": 5}, {"advertiser_id": "1856262173299015", "total_cost": 397.02, "total_conversion": 13, "total_show": 8788, "total_click": 438, "material_count": 31}, {"advertiser_id": "1865579484297291", "total_cost": 363.40999999999997, "total_conversion": 6, "total_show": 3664, "total_click": 164, "material_count": 2}, {"advertiser_id": "1856262671285271", "total_cost": 321.57, "total_conversion": 7, "total_show": 11321, "total_click": 353, "material_count": 28}, {"advertiser_id": "1863704293915657", "total_cost": 308.22, "total_conversion": 8, "total_show": 14749, "total_click": 474, "material_count": 2}, {"advertiser_id": "1863703910190601", "total_cost": 284.16999999999996, "total_conversion": 5, "total_show": 4497, "total_click": 112, "material_count": 3}, {"advertiser_id": "1856262451680267", "total_cost": 269.25, "total_conversion": 9, "total_show": 8741, "total_click": 338, "material_count": 7}, {"advertiser_id": "1865579493176395", "total_cost": 237.38, "total_conversion": 3, "total_show": 3420, "total_click": 47, "material_count": 1}, {"advertiser_id": "1863591497178313", "total_cost": 223.01, "total_conversion": 4, "total_show": 1914, "total_click": 294, "material_count": 1}, {"advertiser_id": "1857984334791881", "total_cost": 215.25, "total_conversion": 3, "total_show": 2973, "total_click": 98, "material_count": 1}, {"advertiser_id": "1849751106173000", "total_cost": 140.47, "total_conversion": 3, "total_show": 1531, "total_click": 171, "material_count": 2}, {"advertiser_id": "1856262668389635", "total_cost": 111.36, "total_conversion": 4, "total_show": 5058, "total_click": 168, "material_count": 6}, {"advertiser_id": "1856262163446808", "total_cost": 100.32, "total_conversion": 3, "total_show": 1558, "total_click": 98, "material_count": 8}, {"advertiser_id": "1856262669786116", "total_cost": 91.58, "total_conversion": 5, "total_show": 4975, "total_click": 197, "material_count": 31}, {"advertiser_id": "1856262283300103", "total_cost": 88.12, "total_conversion": 2, "total_show": 615, "total_click": 80, "material_count": 17}, {"advertiser_id": "1856262284747911", "total_cost": 61.7, "total_conversion": 2, "total_show": 442, "total_click": 38, "material_count": 7}, {"advertiser_id": "1862704150085849", "total_cost": 52.64000000000001, "total_conversion": 0, "total_show": 1051, "total_click": 24, "material_count": 10}, {"advertiser_id": "1865579103801353", "total_cost": 42.16, "total_conversion": 0, "total_show": 1125, "total_click": 17, "material_count": 1}, {"advertiser_id": "1856262451206489", "total_cost": 42.11, "total_conversion": 2, "total_show": 2175, "total_click": 31, "material_count": 1}, {"advertiser_id": "1856262037146631", "total_cost": 34.5, "total_conversion": 0, "total_show": 2024, "total_click": 23, "material_count": 1}, {"advertiser_id": "1865579343296779", "total_cost": 32.61, "total_conversion": 1, "total_show": 617, "total_click": 25, "material_count": 1}, {"advertiser_id": "1856262164905987", "total_cost": 30.15, "total_conversion": 1, "total_show": 391, "total_click": 24, "material_count": 16}, {"advertiser_id": "1856262666403850", "total_cost": 25.56, "total_conversion": 2, "total_show": 600, "total_click": 16, "material_count": 6}, {"advertiser_id": "1856262432202121", "total_cost": 25.55, "total_conversion": 1, "total_show": 1537, "total_click": 17, "material_count": 1}, {"advertiser_id": "1862527910056139", "total_cost": 23.86, "total_conversion": 1, "total_show": 1073, "total_click": 57, "material_count": 2}, {"advertiser_id": "1862527926440202", "total_cost": 19.76, "total_conversion": 0, "total_show": 451, "total_click": 12, "material_count": 1}, {"advertiser_id": "1856262281946179", "total_cost": 18.4, "total_conversion": 0, "total_show": 208, "total_click": 24, "material_count": 6}, {"advertiser_id": "1856262286798538", "total_cost": 17.669999999999998, "total_conversion": 0, "total_show": 218, "total_click": 23, "material_count": 7}, {"advertiser_id": "1863591032582154", "total_cost": 17.240000000000002, "total_conversion": 2, "total_show": 391, "total_click": 21, "material_count": 2}, {"advertiser_id": "1863591046441162", "total_cost": 16.35, "total_conversion": 1, "total_show": 155, "total_click": 7, "material_count": 1}, {"advertiser_id": "1856262450135051", "total_cost": 15.29, "total_conversion": 1, "total_show": 907, "total_click": 60, "material_count": 1}, {"advertiser_id": "1856262068833668", "total_cost": 13.91, "total_conversion": 0, "total_show": 867, "total_click": 56, "material_count": 9}, {"advertiser_id": "1857989900272648", "total_cost": 13.63, "total_conversion": 0, "total_show": 124, "total_click": 7, "material_count": 1}, {"advertiser_id": "1856262204447881", "total_cost": 12.51, "total_conversion": 0, "total_show": 152, "total_click": 5, "material_count": 5}, {"advertiser_id": "1856262173979971", "total_cost": 12.379999999999999, "total_conversion": 0, "total_show": 242, "total_click": 15, "material_count": 14}, {"advertiser_id": "1856262666887563", "total_cost": 11.79, "total_conversion": 0, "total_show": 535, "total_click": 16, "material_count": 2}, {"advertiser_id": "1863703907796105", "total_cost": 10.8, "total_conversion": 0, "total_show": 182, "total_click": 8, "material_count": 1}, {"advertiser_id": "1856262284015619", "total_cost": 9.51, "total_conversion": 0, "total_show": 51, "total_click": 7, "material_count": 2}, {"advertiser_id": "1856262409986051", "total_cost": 8.5, "total_conversion": 0, "total_show": 63, "total_click": 21, "material_count": 1}, {"advertiser_id": "1856262669092867", "total_cost": 8.129999999999999, "total_conversion": 0, "total_show": 339, "total_click": 9, "material_count": 4}, {"advertiser_id": "1863591334168083", "total_cost": 6.07, "total_conversion": 0, "total_show": 147, "total_click": 2, "material_count": 2}, {"advertiser_id": "1863591384413323", "total_cost": 5.08, "total_conversion": 0, "total_show": 133, "total_click": 1, "material_count": 1}, {"advertiser_id": "1857985876932675", "total_cost": 4.86, "total_conversion": 0, "total_show": 31, "total_click": 5, "material_count": 1}, {"advertiser_id": "1856796891661322", "total_cost": 4.3, "total_conversion": 0, "total_show": 83, "total_click": 10, "material_count": 1}, {"advertiser_id": "1856262035684424", "total_cost": 4.16, "total_conversion": 0, "total_show": 148, "total_click": 8, "material_count": 13}, {"advertiser_id": "1856262027774979", "total_cost": 3.72, "total_conversion": 0, "total_show": 7, "total_click": 0, "material_count": 3}, {"advertiser_id": "1856262435400715", "total_cost": 3.22, "total_conversion": 0, "total_show": 187, "total_click": 11, "material_count": 1}, {"advertiser_id": "1862704148378891", "total_cost": 2.76, "total_conversion": 0, "total_show": 8, "total_click": 0, "material_count": 1}, {"advertiser_id": "1856262201354250", "total_cost": 1.9300000000000002, "total_conversion": 0, "total_show": 41, "total_click": 2, "material_count": 10}, {"advertiser_id": "1865579497013578", "total_cost": 1.47, "total_conversion": 0, "total_show": 13, "total_click": 1, "material_count": 1}, {"advertiser_id": "1856262431639561", "total_cost": 1.43, "total_conversion": 1, "total_show": 66, "total_click": 2, "material_count": 1}, {"advertiser_id": "1856262291651035", "total_cost": 1.33, "total_conversion": 0, "total_show": 88, "total_click": 2, "material_count": 1}, {"advertiser_id": "1853348549327881", "total_cost": 1.31, "total_conversion": 0, "total_show": 57, "total_click": 3, "material_count": 1}, {"advertiser_id": "1863591024058506", "total_cost": 1.28, "total_conversion": 0, "total_show": 63, "total_click": 2, "material_count": 1}, {"advertiser_id": "1856262279959556", "total_cost": 1.21, "total_conversion": 0, "total_show": 12, "total_click": 0, "material_count": 1}, {"advertiser_id": "1857990174406723", "total_cost": 1.13, "total_conversion": 0, "total_show": 9, "total_click": 0, "material_count": 1}, {"advertiser_id": "1856262032851144", "total_cost": 0.82, "total_conversion": 0, "total_show": 60, "total_click": 0, "material_count": 10}, {"advertiser_id": "1856262449446089", "total_cost": 0.81, "total_conversion": 0, "total_show": 37, "total_click": 0, "material_count": 2}, {"advertiser_id": "1856796915495178", "total_cost": 0.58, "total_conversion": 0, "total_show": 17, "total_click": 0, "material_count": 2}, {"advertiser_id": "1856262122546697", "total_cost": 0.52, "total_conversion": 0, "total_show": 3, "total_click": 1, "material_count": 2}, {"advertiser_id": "1856262281297159", "total_cost": 0.41000000000000003, "total_conversion": 0, "total_show": 8, "total_click": 4, "material_count": 5}, {"advertiser_id": "1862703917406345", "total_cost": 0.3, "total_conversion": 0, "total_show": 8, "total_click": 0, "material_count": 1}, {"advertiser_id": "1856262068037640", "total_cost": 0.24, "total_conversion": 0, "total_show": 23, "total_click": 2, "material_count": 4}, {"advertiser_id": "1856262067307523", "total_cost": 0.15, "total_conversion": 0, "total_show": 13, "total_click": 1, "material_count": 7}, {"advertiser_id": "1856262026187096", "total_cost": 0.14, "total_conversion": 0, "total_show": 4, "total_click": 0, "material_count": 2}, {"advertiser_id": "1856262040715715", "total_cost": 0.13, "total_conversion": 0, "total_show": 6, "total_click": 0, "material_count": 3}, {"advertiser_id": "1856262025504900", "total_cost": 0.1, "total_conversion": 0, "total_show": 2, "total_click": 0, "material_count": 2}, {"advertiser_id": "1862704183805961", "total_cost": 0.05, "total_conversion": 0, "total_show": 1, "total_click": 0, "material_count": 1}, {"advertiser_id": "1857984123971657", "total_cost": 0.04, "total_conversion": 0, "total_show": 2, "total_click": 0, "material_count": 1}, {"advertiser_id": "1856262450650249", "total_cost": 0.03, "total_conversion": 0, "total_show": 2, "total_click": 0, "material_count": 1}, {"advertiser_id": "1863703884866887", "total_cost": 0.0, "total_conversion": 0, "total_show": 0, "total_click": 0, "material_count": 1}, {"advertiser_id": "1862704528175236", "total_cost": 0.0, "total_conversion": 0, "total_show": 0, "total_click": 0, "material_count": 1}, {"advertiser_id": "1862703982914763", "total_cost": 0.0, "total_conversion": 0, "total_show": 0, "total_click": 0, "material_count": 2}, {"advertiser_id": "1857985927142020", "total_cost": 0.0, "total_conversion": 0, "total_show": 0, "total_click": 0, "material_count": 1}, {"advertiser_id": "1857985887882760", "total_cost": 0.0, "total_conversion": 0, "total_show": 1, "total_click": 0, "material_count": 1}, {"advertiser_id": "1856796859963464", "total_cost": 0.0, "total_conversion": 0, "total_show": 6, "total_click": 0, "material_count": 1}, {"advertiser_id": "1856262665383499", "total_cost": 0.0, "total_conversion": 0, "total_show": 6, "total_click": 0, "material_count": 1}, {"advertiser_id": "1856262285444360", "total_cost": 0.0, "total_conversion": 0, "total_show": 0, "total_click": 0, "material_count": 1}, {"advertiser_id": "1856262159735819", "total_cost": 0.0, "total_conversion": 0, "total_show": 0, "total_click": 0, "material_count": 1}, {"advertiser_id": "1856262158614603", "total_cost": 0.0, "total_conversion": 0, "total_show": 0, "total_click": 0, "material_count": 1}, {"advertiser_id": "1856262157949001", "total_cost": 0.0, "total_conversion": 0, "total_show": 0, "total_click": 0, "material_count": 2}, {"advertiser_id": "1856262040059908", "total_cost": 0.0, "total_conversion": 0, "total_show": 0, "total_click": 0, "material_count": 1}];
-const byProd = [{"product": "红果短剧", "cost": 6423.86, "conversion": 161, "show": 129997, "click": 6166, "ctr": 4.7432, "conv_rate": 2.6111, "cpm": 49.42, "cpc": 1.04, "conv_cost": 39.9, "count": 335}, {"product": "番茄小说", "cost": 2640.22, "conversion": 99, "show": 49959, "click": 2455, "ctr": 4.914, "conv_rate": 4.0326, "cpm": 52.85, "cpc": 1.08, "conv_cost": 26.67, "count": 26}, {"product": "狸鸣红果", "cost": 24.84, "conversion": 0, "show": 584, "click": 13, "ctr": 2.226, "conv_rate": 0.0, "cpm": 42.53, "cpc": 1.91, "conv_cost": 0, "count": 2}, {"product": "其他", "cost": 17.43, "conversion": 0, "show": 191, "click": 7, "ctr": 3.6649, "conv_rate": 0.0, "cpm": 91.26, "cpc": 2.49, "conv_cost": 0, "count": 17}];
-const topNames = ["番茄小说-纯激励-解压视频+激励点-竖-26042", "番茄小说-纯激励-解压视频+激励点-竖-26042", "红果短剧-纯激励-解压视频+激励点-竖-26041", "红果短剧-纯短剧-夺卿欢-BSL-lc-0313-", "番茄小说-纯激励-解压视频+激励点-竖-26042", "红果短剧-纯激励-解压视频+激励点-竖-26041", "红果短剧-纯激励-解压视频+激励点-竖-26041", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-", "番茄小说-纯激励-解压视频+激励点-竖-26041", "红果短剧-纯激励-解压视频+激励点-竖-26041", "红果短剧-纯激励-解压视频+激励点-竖-26041", "红果短剧-纯激励-解压视频+激励点-竖-26041", "红果短剧-纯激励-解压视频+激励点-竖-26041", "番茄小说-纯激励-解压视频+激励点-竖-26042", "红果短剧-纯激励-解压视频+激励点-竖-26042", "红果短剧-纯激励-解压视频+激励点-竖-26042", "红果短剧-纯激励-解压视频+激励点-竖-26041", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-", "红果短剧-纯短剧-夺卿欢-BSL-jyf-0321", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-"];
-const topCosts = [886.69, 647.59, 634.39, 454.37, 447.0, 382.9, 351.72, 351.28, 242.54, 237.38, 233.88, 223.01, 215.25, 197.45, 151.89, 140.16, 129.53, 100.67, 91.88, 90.08];
-const topConvs = [53, 9, 19, 12, 24, 8, 9, 11, 3, 3, 4, 4, 3, 3, 3, 3, 2, 2, 4, 3];
-const scatterData = [[886.69, 53, "11.46%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL", 16.73], [647.59, 9, "2.17%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL", 71.95], [634.39, 19, "8.56%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 33.39], [454.37, 12, "1.97%", "红果短剧-纯短剧-夺卿欢-BSL-lc-0313-014", 37.86], [447.0, 24, "9.87%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL", 18.63], [382.9, 8, "1.86%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 47.86], [351.72, 9, "7.10%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 39.08], [351.28, 11, "3.08%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-64", 31.93], [242.54, 3, "2.76%", "番茄小说-纯激励-解压视频+激励点-竖-260410-ZGL", 80.85], [237.38, 3, "1.37%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 79.13], [233.88, 4, "5.44%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 58.47], [223.01, 4, "15.36%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 55.75], [215.25, 3, "3.30%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 71.75], [197.45, 3, "1.64%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL", 65.82], [151.89, 3, "3.43%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL", 50.63], [140.16, 3, "11.22%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL", 46.72], [129.53, 2, "3.38%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 64.77], [100.67, 2, "3.68%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 ", 50.34], [91.88, 4, "3.46%", "红果短剧-纯短剧-夺卿欢-BSL-jyf-0321-13", 22.97], [90.08, 3, "6.43%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪+", 30.03], [85.29, 1, "7.34%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-", 85.29], [83.65, 3, "7.01%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-", 27.88], [78.93, 3, "6.94%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪+", 26.31], [76.32, 2, "5.94%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL", 38.16], [71.62, 3, "1.76%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 ", 23.87], [69.28, 1, "6.62%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-", 69.28], [68.82, 1, "2.77%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-87", 68.82], [67.76, 1, "2.76%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-57", 67.76], [67.4, 1, "2.21%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL", 67.4], [65.68, 5, "27.41%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL", 13.14], [63.47, 2, "5.32%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0324-33", 31.74], [62.15, 1, "5.29%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0330-15", 62.15], [61.37, 3, "2.12%", "红果短剧-纯短剧-夺卿欢-BSL-jyf-0321-12", 20.46], [61.27, 1, "4.99%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0324-7", 61.27], [61.22, 1, "2.11%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-2", 61.22], [50.25, 1, "1.51%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-8", 50.25], [42.16, 0, "1.51%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 0.0], [42.11, 2, "1.43%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-79", 21.06], [41.59, 0, "1.73%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL", 0.0], [39.12, 2, "7.71%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-", 19.56], [38.51, 0, "6.68%", "红果短剧-现代-曼陀罗-解说混剪-1+-260330-QSN", 0.0], [38.09, 1, "2.36%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-33", 38.09], [37.76, 0, "2.31%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-38", 0.0], [35.28, 1, "6.76%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 ", 35.28], [34.5, 0, "1.14%", "红果短剧-纯短剧-夺卿欢-BSL-jyf-0321-15", 0.0], [34.07, 1, "4.88%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-9", 34.07], [32.61, 1, "4.05%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 32.61], [31.31, 1, "6.57%", "红果短剧-纯短剧-现代-曼陀罗-BSL-jyf-0331-6", 31.31], [30.68, 0, "5.52%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪+", 0.0], [30.64, 1, "6.42%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-", 30.64], [30.29, 0, "2.93%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 ", 0.0], [29.67, 0, "3.20%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 ", 0.0], [28.89, 0, "7.21%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-", 0.0], [28.83, 0, "2.28%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-15", 0.0], [27.53, 0, "4.27%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0330-37", 0.0], [26.55, 0, "4.97%", "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-", 0.0], [25.75, 3, "4.10%", "红果短剧-现代-一品布衣4：割据篇-原片混剪-1+-0407", 8.58], [25.68, 3, "4.61%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0321-4", 8.56], [25.55, 1, "1.11%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-4", 25.55], [24.81, 1, "1.44%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-23", 24.81], [24.53, 0, "3.21%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 ", 0.0], [24.33, 2, "1.82%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-81", 12.17], [23.71, 1, "5.36%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 ", 23.71], [23.64, 0, "6.10%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-34", 0.0], [23.28, 0, "2.91%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0330-1", 0.0], [22.33, 2, "6.75%", "红果短剧-纯短剧-现代-曼陀罗-BSL-jyf-0408-8", 11.17], [21.07, 0, "2.32%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-72", 0.0], [20.38, 1, "2.41%", "红果短剧-纯短剧-夺卿欢-BSL-lc-0313-015", 20.38], [19.76, 0, "2.66%", "狸鸣红果-激励-lm-红果短剧-0204-lk-ys2-02", 0.0], [18.59, 0, "2.86%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 0.0], [17.88, 0, "6.55%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-52", 0.0], [17.56, 1, "4.78%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0321-15", 17.56], [17.51, 0, "8.44%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-AIHC-竖-2", 0.0], [17.31, 0, "14.77%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-AIHC-竖-2", 0.0], [17.09, 0, "17.36%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-原片混剪-竖-2", 0.0], [16.35, 1, "4.52%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL", 16.35], [16.04, 1, "3.62%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL", 16.04], [15.29, 1, "6.62%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-56", 15.29], [14.69, 0, "2.62%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-18", 0.0], [14.58, 1, "4.75%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0318-30", 14.58], [14.41, 1, "4.65%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0330-31", 14.41], [13.89, 0, "5.23%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 0.0], [13.63, 0, "5.65%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 0.0], [13.36, 1, "5.46%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL", 13.36], [13.09, 0, "4.55%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0330-30", 0.0], [12.96, 0, "5.28%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-85", 0.0], [11.9, 1, "4.12%", "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL", 11.9], [11.59, 0, "11.34%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-原片混剪-竖-2", 0.0], [11.57, 0, "9.30%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-原片混剪-竖-2", 0.0], [11.47, 1, "4.10%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-29", 11.47], [11.24, 2, "3.97%", "红果短剧-纯短剧-假千金真替罪-BSL-mcy写-317-定", 5.62], [11.03, 0, "2.99%", "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 ", 0.0], [10.8, 0, "4.40%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL", 0.0], [10.53, 0, "3.60%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0324-13", 0.0], [10.4, 0, "9.68%", "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL", 0.0], [9.44, 0, "10.00%", "红果短剧-纯短剧-现代-那年冬至-片段混剪-原片混剪-竖-2", 0.0], [9.1, 0, "4.50%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 0.0], [9.06, 0, "6.88%", "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-68", 0.0], [8.84, 1, "4.78%", "红果短剧-纯短剧-纹心尖-BSL-jyf-0318-18", 8.84], [8.5, 0, "33.33%", "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL", 0.0]];
+const KPI = {"today": {"date": "2026-05-31", "total_cost": 145861.34, "total_conversion": 5012, "total_show": 2894055, "total_click": 144738, "cpm": 50.4003, "cpc": 1.0078, "ctr": 5.0012, "convert_rate": 3.4628, "convert_cost": 29.1024, "updated_at": "2026-06-02 05:51:34"}, "yesterday": {}, "today_date": "2026-05-31", "yesterday_date": "-"};
+const TREND = [{"date": "2026-05-31", "total_cost": 145861.34, "total_conversion": 5012, "total_show": 2894055, "total_click": 144738, "cpm": 50.4003, "cpc": 1.0078, "ctr": 5.0012, "convert_rate": 3.4628, "convert_cost": 29.1024, "updated_at": "2026-06-02 05:51:34"}];
+const ADV = [{"name": "1865218318920714", "advertiser_id": "1865218318920714", "total_cost": 42684.07, "total_conversion": 1450, "total_show": 1060741, "total_click": 43539, "material_count": 8, "cpm": 40.24, "cpc": 0.98, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 29.44}, {"name": "1865579483739209", "advertiser_id": "1865579483739209", "total_cost": 15224.56, "total_conversion": 270, "total_show": 247690, "total_click": 8360, "material_count": 64, "cpm": 61.47, "cpc": 1.82, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 56.39}, {"name": "1865218318358873", "advertiser_id": "1865218318358873", "total_cost": 11697.58, "total_conversion": 404, "total_show": 227032, "total_click": 8179, "material_count": 6, "cpm": 51.52, "cpc": 1.43, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 28.95}, {"name": "1865218094090359", "advertiser_id": "1865218094090359", "total_cost": 8277.25, "total_conversion": 374, "total_show": 130928, "total_click": 6634, "material_count": 6, "cpm": 63.22, "cpc": 1.25, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 22.13}, {"name": "1865218315375689", "advertiser_id": "1865218315375689", "total_cost": 3260.86, "total_conversion": 115, "total_show": 65298, "total_click": 4907, "material_count": 16, "cpm": 49.94, "cpc": 0.66, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 28.36}, {"name": "1865218075439690", "advertiser_id": "1865218075439690", "total_cost": 2862.53, "total_conversion": 100, "total_show": 72943, "total_click": 3247, "material_count": 14, "cpm": 39.24, "cpc": 0.88, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 28.63}, {"name": "1863704346390979", "advertiser_id": "1863704346390979", "total_cost": 2608.04, "total_conversion": 171, "total_show": 32382, "total_click": 3176, "material_count": 19, "cpm": 80.54, "cpc": 0.82, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 15.25}, {"name": "1864975410384968", "advertiser_id": "1864975410384968", "total_cost": 2538.37, "total_conversion": 103, "total_show": 30842, "total_click": 3515, "material_count": 1, "cpm": 82.3, "cpc": 0.72, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 24.64}, {"name": "1865579370937354", "advertiser_id": "1865579370937354", "total_cost": 2333.76, "total_conversion": 60, "total_show": 26499, "total_click": 1586, "material_count": 3, "cpm": 88.07, "cpc": 1.47, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 38.9}, {"name": "1865218317886667", "advertiser_id": "1865218317886667", "total_cost": 2300.78, "total_conversion": 49, "total_show": 65358, "total_click": 2294, "material_count": 2, "cpm": 35.2, "cpc": 1.0, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 46.95}, {"name": "1865218103801864", "advertiser_id": "1865218103801864", "total_cost": 2291.96, "total_conversion": 115, "total_show": 20725, "total_click": 2877, "material_count": 6, "cpm": 110.59, "cpc": 0.8, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 19.93}, {"name": "1863703913752650", "advertiser_id": "1863703913752650", "total_cost": 1981.28, "total_conversion": 86, "total_show": 29463, "total_click": 1837, "material_count": 3, "cpm": 67.25, "cpc": 1.08, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 23.04}, {"name": "1865218096860167", "advertiser_id": "1865218096860167", "total_cost": 1696.51, "total_conversion": 73, "total_show": 29360, "total_click": 2302, "material_count": 7, "cpm": 57.78, "cpc": 0.74, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 23.24}, {"name": "1864975313867145", "advertiser_id": "1864975313867145", "total_cost": 1691.94, "total_conversion": 73, "total_show": 15696, "total_click": 1595, "material_count": 5, "cpm": 107.79, "cpc": 1.06, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 23.18}, {"name": "1865218093364228", "advertiser_id": "1865218093364228", "total_cost": 1390.03, "total_conversion": 61, "total_show": 28851, "total_click": 2574, "material_count": 7, "cpm": 48.18, "cpc": 0.54, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 22.79}, {"name": "1863591386738697", "advertiser_id": "1863591386738697", "total_cost": 1258.93, "total_conversion": 30, "total_show": 8503, "total_click": 386, "material_count": 9, "cpm": 148.06, "cpc": 3.26, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 41.96}, {"name": "1865579103801353", "advertiser_id": "1865579103801353", "total_cost": 1176.5, "total_conversion": 48, "total_show": 24366, "total_click": 1013, "material_count": 2, "cpm": 48.28, "cpc": 1.16, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 24.51}, {"name": "1865218313770442", "advertiser_id": "1865218313770442", "total_cost": 1096.08, "total_conversion": 78, "total_show": 20427, "total_click": 1532, "material_count": 8, "cpm": 53.66, "cpc": 0.72, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 14.05}, {"name": "1864975159825546", "advertiser_id": "1864975159825546", "total_cost": 1046.63, "total_conversion": 34, "total_show": 12942, "total_click": 956, "material_count": 18, "cpm": 80.87, "cpc": 1.09, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 30.78}, {"name": "1865579352222027", "advertiser_id": "1865579352222027", "total_cost": 994.72, "total_conversion": 24, "total_show": 7932, "total_click": 313, "material_count": 1, "cpm": 125.41, "cpc": 3.18, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 41.45}];
+const ADV_TREND = {"1865218094090359": [{"advertiser_id": "1865218094090359", "date": "2026-05-31", "total_cost": 8277.25, "total_conversion": 374, "total_click": 6634}], "1865218315375689": [{"advertiser_id": "1865218315375689", "date": "2026-05-31", "total_cost": 3260.86, "total_conversion": 115, "total_click": 4907}], "1865218318358873": [{"advertiser_id": "1865218318358873", "date": "2026-05-31", "total_cost": 11697.58, "total_conversion": 404, "total_click": 8179}], "1865218318920714": [{"advertiser_id": "1865218318920714", "date": "2026-05-31", "total_cost": 42684.07, "total_conversion": 1450, "total_click": 43539}], "1865579483739209": [{"advertiser_id": "1865579483739209", "date": "2026-05-31", "total_cost": 15224.56, "total_conversion": 270, "total_click": 8360}]};
+const PROD = [{"product": "其他", "cost": 45469.94, "conversion": 1815, "show": 742612, "click": 46523, "cnt": 637}, {"product": "番茄短剧", "cost": 44225.49, "conversion": 1381, "show": 1121682, "click": 44546, "cnt": 112}, {"product": "番茄", "cost": 24022.91, "conversion": 1069, "show": 455981, "click": 29216, "cnt": 618}, {"product": "红果短剧", "cost": 17379.02, "conversion": 365, "show": 316191, "click": 13325, "cnt": 577}, {"product": "狸鸣红果", "cost": 7924.87, "conversion": 198, "show": 117402, "click": 5525, "cnt": 153}, {"product": "红果", "cost": 4083.82, "conversion": 85, "show": 88138, "click": 2830, "cnt": 396}, {"product": "番茄小说", "cost": 2755.29, "conversion": 99, "show": 52049, "click": 2773, "cnt": 32}];
+const PROD_TREND = {"其他": [{"date": "2026-05-31", "total_cost": 45469.94, "total_conversion": 1815}], "番茄短剧": [{"date": "2026-05-31", "total_cost": 44225.49, "total_conversion": 1381}], "番茄": [{"date": "2026-05-31", "total_cost": 24022.91, "total_conversion": 1069}], "红果短剧": [{"date": "2026-05-31", "total_cost": 17379.02, "total_conversion": 365}], "狸鸣红果": [{"date": "2026-05-31", "total_cost": 7924.87, "total_conversion": 198}], "红果": [{"date": "2026-05-31", "total_cost": 4083.82, "total_conversion": 85}], "番茄小说": [{"date": "2026-05-31", "total_cost": 2755.29, "total_conversion": 99}]};
+const MATS = [{"material_name": "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (164)", "advertiser_id": "1863703913752650", "product": "番茄小说", "cost": 886.69, "conversion_num": 53, "show_count": 8572, "click": 982, "cpc": 0.9, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 16.73}, {"material_name": "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (179)", "advertiser_id": "1863703913752650", "product": "番茄小说", "cost": 647.59, "conversion_num": 9, "show_count": 15684, "click": 341, "cpc": 1.9, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 71.95}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (27)", "advertiser_id": "1865579391321091", "product": "红果短剧", "cost": 634.39, "conversion_num": 19, "show_count": 11296, "click": 967, "cpc": 0.66, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 33.39}, {"material_name": "红果短剧-纯短剧-夺卿欢-BSL-lc-0313-014", "advertiser_id": "1856262110086483", "product": "红果短剧", "cost": 454.37, "conversion_num": 12, "show_count": 7601, "click": 150, "cpc": 3.03, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 37.86}, {"material_name": "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (75)", "advertiser_id": "1863703913752650", "product": "番茄小说", "cost": 447.0, "conversion_num": 24, "show_count": 5207, "click": 514, "cpc": 0.87, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 18.63}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (59)", "advertiser_id": "1865579496531977", "product": "红果短剧", "cost": 382.9, "conversion_num": 8, "show_count": 4150, "click": 77, "cpc": 4.97, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 47.86}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (75)", "advertiser_id": "1865579483739209", "product": "红果短剧", "cost": 351.72, "conversion_num": 9, "show_count": 3379, "click": 240, "cpc": 1.47, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 39.08}, {"material_name": "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-64", "advertiser_id": "1856262671930375", "product": "红果短剧", "cost": 351.28, "conversion_num": 11, "show_count": 5617, "click": 173, "cpc": 2.03, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 31.93}, {"material_name": "番茄小说-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横算炼 (17)", "advertiser_id": "1863704293915657", "product": "番茄小说", "cost": 242.54, "conversion_num": 3, "show_count": 14479, "click": 400, "cpc": 0.61, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 80.85}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (74)", "advertiser_id": "1865579493176395", "product": "红果短剧", "cost": 237.38, "conversion_num": 3, "show_count": 3420, "click": 47, "cpc": 5.05, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 79.13}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (41)", "advertiser_id": "1865579484297291", "product": "红果短剧", "cost": 233.88, "conversion_num": 4, "show_count": 1949, "click": 106, "cpc": 2.21, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 58.47}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (83)", "advertiser_id": "1863591497178313", "product": "红果短剧", "cost": 223.01, "conversion_num": 4, "show_count": 1914, "click": 294, "cpc": 0.76, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 55.75}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (57)", "advertiser_id": "1857984334791881", "product": "红果短剧", "cost": 215.25, "conversion_num": 3, "show_count": 2973, "click": 98, "cpc": 2.2, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 71.75}, {"material_name": "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (107)", "advertiser_id": "1863703910190601", "product": "番茄小说", "cost": 197.45, "conversion_num": 3, "show_count": 3716, "click": 61, "cpc": 3.24, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 65.82}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横宁波  (233)", "advertiser_id": "1865579483739209", "product": "红果短剧", "cost": 151.89, "conversion_num": 3, "show_count": 1167, "click": 40, "cpc": 3.8, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 50.63}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横宁波  (61)", "advertiser_id": "1849751106173000", "product": "红果短剧", "cost": 140.16, "conversion_num": 3, "show_count": 1524, "click": 171, "cpc": 0.82, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 46.72}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260410-ZGL-BSL-纵横宁波 (52)", "advertiser_id": "1865579484297291", "product": "红果短剧", "cost": 129.53, "conversion_num": 2, "show_count": 1715, "click": 58, "cpc": 2.23, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 64.77}, {"material_name": "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 (4)", "advertiser_id": "1856262671930375", "product": "红果短剧", "cost": 100.67, "conversion_num": 2, "show_count": 2173, "click": 80, "cpc": 1.26, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 50.34}, {"material_name": "红果短剧-纯短剧-夺卿欢-BSL-jyf-0321-13", "advertiser_id": "1856262451680267", "product": "红果短剧", "cost": 91.88, "conversion_num": 4, "show_count": 3412, "click": 118, "cpc": 0.78, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 22.97}, {"material_name": "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪+激励-1+-260401-JMM-纵横宁波-2", "advertiser_id": "1856262195213322", "product": "红果短剧", "cost": 90.08, "conversion_num": 3, "show_count": 2784, "click": 179, "cpc": 0.5, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 30.03}, {"material_name": "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-1+-激励-260402-ZYY-纵横宁波-2", "advertiser_id": "1856262195213322", "product": "红果短剧", "cost": 85.29, "conversion_num": 1, "show_count": 3121, "click": 229, "cpc": 0.37, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 85.29}, {"material_name": "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-1+-激励-260402-ZYY-纵横宁波-4", "advertiser_id": "1856262195213322", "product": "红果短剧", "cost": 83.65, "conversion_num": 3, "show_count": 2652, "click": 186, "cpc": 0.45, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 27.88}, {"material_name": "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪+激励-01-260401-JMM-纵横宁波-1", "advertiser_id": "1856262195213322", "product": "红果短剧", "cost": 78.93, "conversion_num": 3, "show_count": 2232, "click": 155, "cpc": 0.51, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 26.31}, {"material_name": "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (180)", "advertiser_id": "1863703910190601", "product": "番茄小说", "cost": 76.32, "conversion_num": 2, "show_count": 657, "click": 39, "cpc": 1.96, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 38.16}, {"material_name": "红果短剧-纯短剧-定制剧-夺卿欢-BSL-lfp-0323 (27)", "advertiser_id": "1856262668389635", "product": "红果短剧", "cost": 71.62, "conversion_num": 3, "show_count": 2673, "click": 47, "cpc": 1.52, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 23.87}, {"material_name": "红果短剧-现代-豪门月嫂，一不小心成了全家白月光-原片混剪-1+-激励-260402-ZYY-纵横宁波-1", "advertiser_id": "1856262195213322", "product": "红果短剧", "cost": 69.28, "conversion_num": 1, "show_count": 2266, "click": 150, "cpc": 0.46, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 69.28}, {"material_name": "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-87", "advertiser_id": "1856262671930375", "product": "红果短剧", "cost": 68.82, "conversion_num": 1, "show_count": 1696, "click": 47, "cpc": 1.46, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 68.82}, {"material_name": "红果短剧-纯短剧-夺卿欢-BSL-lk-0408-57", "advertiser_id": "1856262671285271", "product": "红果短剧", "cost": 67.76, "conversion_num": 1, "show_count": 1885, "click": 52, "cpc": 1.3, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 67.76}, {"material_name": "红果短剧-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横宁波  (226)", "advertiser_id": "1865579483739209", "product": "红果短剧", "cost": 67.4, "conversion_num": 1, "show_count": 452, "click": 10, "cpc": 6.74, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 67.4}, {"material_name": "番茄小说-纯激励-解压视频+激励点-竖-260421-ZGL-BSL-纵横算炼  (101)", "advertiser_id": "1863704293915657", "product": "番茄小说", "cost": 65.68, "conversion_num": 5, "show_count": 270, "click": 74, "cpc": 0.89, "ctr": 0.0, "conv_rate": 0.0, "conv_cost": 13.14}];
+const DATES = ["2026-05-31"];
+const ALL_ADV = ["1865218318920714", "1865579483739209", "1865218318358873", "1865218094090359", "1865218315375689", "1865218075439690", "1863704346390979", "1864975410384968", "1865579370937354", "1865218317886667", "1865218103801864", "1863703913752650", "1865218096860167", "1864975313867145", "1865218093364228", "1863591386738697", "1865579103801353", "1865218313770442", "1864975159825546", "1865579352222027", "1865579493176395", "1865218319465674", "1856262451680267", "1865579363695880", "1856262163446808", "1865218302817354", "1865217965842692", "1856262671930375", "1863703643641863", "1865218098275335", "1865579391321091", "1863591383931738", "1865217970573716", "1863704348521640", "1865217960826186", "1856262195213322", "1863704351495699", "1864975088936451", "1856262451206489", "1856262110086483", "1856262671285271", "1863704345652487", "1863704233815049", "1856073954258436", "1863703708029065", "1863704306435339", "1863704044041623", "1865218092641491", "1865218308450507", "1856262173299015", "1863704332270084", "1865579496531977", "1864975404692679", "1863591175524503", "1865218303936715", "1865579484297291", "1863704296453131", "1863677187356683", "1863703033580820", "1865217961442585", "1863703910190601", "1863704293915657", "1865579396346883", "1863703858709643", "1865218309680778", "1856262450650249", "1863704327805155", "1856262204447881", "1856262673930244", "1849751106173000", "1863591497178313", "1857984334791881", "1856262674598279", "1865218078333959", "1856262676066307", "1865218101027207", "1865218307938313", "1863703038722633", "1865218312697161", "1863704286484868", "1865579353265163", "1863591334168083", "1863591327176713", "1861446400310411", "1856262669786116", "1864975086077316", "1857984240107659", "1857990295925001", "1864975086781576", "1863703863121993", "1863703809825545", "1863704333814215", "1865217932043400", "1864975328393352", "1863704326288663", "1857984235540490", "1863703796832266", "1865579328000202", "1863703709613385", "1865218072949833", "1856262668389635", "1865217941949707", "1865218090305540", "1865218311604299", "1863704305842409", "1863704343196635", "1865218315911177", "1862528238398468", "1863591037380691", "1864975326878724", "1857990270221443", "1856262447788042", "1864975320329415", "1865217951899913", "1863681023858180", "1865217967129604", "1865579102789003", "1865218297611623", "1856262283300103", "1863704295067931", "1863704255742035", "1865218096174664", "1856262450135051", "1865579357039626", "1865217936986247", "1863703720929571", "1865218296924679", "1865217926935560", "1863703692690499", "1863704324882567", "1862703839874313", "1865217933453447", "1863606695788936", "1865579369677257", "1865218074765595", "1856262284747911", "1865579323560139", "1863703656099850", "1864975327585864", "1865217969903703", "1865579352744138", "1857984229830090", "1862527910056139", "1862704150085849", "1861446036984858", "1862528146541066", "1863704336166039", "1863704108348695", "1856262679579656", "1857984256591177", "1863704303688073", "1856262449446089", "1857989533284538", "1865217925472772", "1863591474223178", "1857984616992008", "1863704275194068", "1856262203929609", "1865217947000011", "1864975164808203", "1863704284402696", "1856262446237707", "1857984230335642", "1863680996000772", "1863606752736276", "1865217939239306", "1863703038149913", "1863607922452490", "1862704122352036", "1863607299258376", "1863703808781466", "1863704310204552", "1865579182208075", "1862703843036377", "1856262289766473", "1857990373009547", "1856262291309579", "1856262281297159", "1862704187431193", "1856262673282052", "1856262037146631", "1863704285140995", "1856262267588931", "1863704307047691", "1861446100440067", "1865579343296779", "1863703729852740", "1863704014440584", "1865579337376778", "1863704102501704", "1856262164905987", "1865579331446921", "1857984958694411", "1856262672615431", "1863703712898259", "1862527907925003", "1863704353827850", "1865217951332489", "1865217962003914", "1864975170416969", "1863591410020809", "1856262666403850", "1856262432202121", "1857984624903171", "1857985984721171", "1865217949111305", "1856074125780996", "1862704472309764", "1863606814551578", "1865217967873348", "1863677265900809", "1856262447302665", "1863704322623498", "1865217953493449", "1863607291422859", "1863703830280666", "1861446491948871", "1863703670558163", "1863590972826889", "1863591320645641", "1863677265338569", "1857990290897048", "1863591279128794", "1863703753730264", "1863704020075652", "1862527926440202", "1865579361021060", "1863591413679114", "1856158571355272", "1856262669092867", "1857990368279748", "1865217947501769", "1856262281946179", "1856262279337411", "1856262286798538", "1865579321523211", "1863606800148739", "1863591032582154", "1865579361680520", "1863704335503591", "1863591046441162", "1857984701410827", "1863591332031625", "1863606782361611", "1863607946582152", "1863591309598279", "1863704293350473", "1865579060489412", "1864975085390531", "1857984701090951", "1864975408348488", "1857989900272648", "1856262291651035", "1863703749040137", "1857984225484040", "1856262068833668", "1854285894921239", "1856262677562371", "1856158246968330", "1856262173979971", "1863703653642308", "1863703995132104", "1863704301171914", "1865217939743755", "1862527906328681", "1856262666887563", "1856262026187096", "1863704248016010", "1862704043604167", "1863704103216135", "1863703645927015", "1863704279749636", "1863703907796105", "1862704482635914", "1863703637067977", "1865579096077513", "1863606788031627", "1863607334262980", "1863677188008969", "1856796898914627", "1856262292342921", "1857990565323977", "1856262087279684", "1863704290635786", "1863606779727947", "1856262284015619", "1863681014224971", "1856262275917851", "1863607098098011", "1856262256097288", "1863607097465290", "1863680967171467", "1863606665288073", "1856262409986051", "1862704001453384", "1865217960288521", "1856796887971915", "1865217945886729", "1863704249304649", "1863680989159720", "1865579359702020", "1863606802389075", "1862704483748938", "1856073948670027", "1865579069985799", "1863703807587337", "1857990143106507", "1862704453724292", "1863606770440395", "1863703814915160", "1862528115622276", "1854285897662467", "1863703812549636", "1865579354856649", "1862704468036692", "1856262194200777", "1857984252704074", "1863606679875593", "1865579332256778", "1863704319077530", "1863606792018250", "1863681021655139", "1862528232500232", "1863704118975747", "1863677161806023", "1862528150262027", "1852377749056515", "1864975000317960", "1863591044303049", "1863591384413323", "1856262448968139", "1863591029282185", "1865218088801476", "1857985876932675", "1862527929450505", "1863607093030027", "1857990174406723", "1856262269582340", "1863704349956360", "1856796891661322", "1862704463726601", "1856262035684424", "1857984894654491", "1857989301432584", "1863591330411595", "1862704475603529", "1863704325582932", "1863607295564887", "1857984254973961", "1856073967126727", "1863591308764296", "1863704276821000", "1856158572043395", "1862704498473033", "1862703973288970", "1863606806022595", "1862704110588376", "1856158493432904", "1856262027774979", "1864975088175128", "1849203644845529", "1856158258344455", "1856796888473609", "1857984662868299", "1862704048229735", "1864975411063815", "1856262446736395", "1865217949790362", "1863703709063305", "1847306954537291", "1863704304242955", "1857984223427976", "1863591386168347", "1863606788627977", "1862703901808776", "1863591278600395", "1863591285729290", "1856262435400715", "1854285969257865", "1863606778415257", "1856262276925707", "1863591289757763", "1863607302990212", "1865217952438345", "1863703679064459", "1863703706340363", "1862704148378891", "1862704460926473", "1863680947602763", "1863703665688583", "1857984885645315", "1856262431639561", "1865579103341577", "1863607098631177", "1864975403935175", "1865579320973386", "1862703862622600", "1863591026340937", "1863703905255683", "1863703765605448", "1863607095780361", "1862703964978520", "1865217935571139", "1863703716571527", "1856262369689675", "1863703892142155", "1863606790881547", "1863606664215561", "1863704304776457", "1863677172340105", "1862528240089097", "1863703864771979", "1864975015641411", "1862704222547015", "1862704225359431", "1863704311581720", "1856073945014537", "1856262290627785", "1856797005122699", "1863591382363403", "1862704561993928", "1863591317756931", "1863607096958027", "1856158595574153", "1863606692928835", "1856262201354250", "1863606713159115", "1864974498773508", "1854285925655049", "1863607306562728", "1862704588177545", "1862704148910297", "1863607105396739", "1856158261019779", "1863703647458515", "1862704005085699", "1863703641818116", "1857990145880219", "1864974997889476", "1853801726389447", "1856796895852938", "1864975078529482", "1856158258538883", "1865579497013578", "1862528244446538", "1863607305825287", "1863606815827208", "1862704079442377", "1864975318259272", "1862527882123353", "1865218073462985", "1863607066780135", "1853348549327881", "1856262374883656", "1863591024058506", "1862528120954884", "1863606805296391", "1862704478073482", "1862704519011465", "1856262279959556", "1857984104282121", "1865217940321755", "1857990266481988", "1863703851758920", "1865579369169931", "1862528228505610", "1863703675372039", "1856158244188488", "1854285920583176", "1863607092403211", "1855343399946244", "1865579368615945", "1856158578899971", "1857990360616153", "1861446339362884", "1864975001058307", "1863677170263113", "1862703934725252", "1862528241698122", "1863703871309834", "1863591430673929", "1863591331491914", "1864975080149385", "1863680946584587", "1856262032851144", "1865579367015435", "1865218077650244", "1864975323136071", "1863704283005955", "1862704140754057", "1856158492650119", "1857985971303498", "1856796859308104", "1856797134175305", "1862704046780547", "1863703684440394", "1856158260366472", "1861446272521353", "1863680952287242", "1863680973342168", "1857984907147594", "1854285892835668", "1861446330831172", "1854286070141508", "1863704292313418", "1863680948577707", "1863704318425097", "1856158569005066", "1856796915495178", "1862704183308699", "1848391403680297", "1863703919902859", "1864975239894362", "1857984075243531", "1862704473017927", "1863703800625546", "1862703917406345", "1856262122546697", "1856262076042455", "1862703903250756", "1864975241403587", "1864975321043976", "1856262088870915", "1862703996213335", "1854286118041609", "1863591335607559", "1857990167173209", "1862528127608009", "1862527835735563", "1863704059623818", "1862528110723080", "1864975079542795", "1865579370249611", "1863606777885705", "1863681022375384", "1864975324780883", "1862704111298564", "1862704582041866", "1856262081191940", "1862527865418947", "1863591282480138", "1863703813267463", "1862528240685578", "1862703967876362", "1865217941390795", "1863606706891907", "1863703635762441", "1865579366515978", "1856262434881546", "1862703927216331", "1856158570279944", "1856796978853912", "1856073966427144", "1856262068037640", "1857984082640027", "1856262665383499", "1862527800692995", "1862527874364489", "1862704478633099", "1863606670134730", "1864975325546756", "1856262066589763", "1863606666919067", "1863606772578442", "1863607924121802", "1863681010091015", "1863703869997258", "1864975322383512", "1856073961348103", "1857984220615688", "1856158259659779", "1856158307856644", "1857990113477897", "1857990164382099", "1863606673746266", "1865579094957258", "1856262025504900", "1857990366935236", "1863704228080650", "1865579367529545", "1857984701798535", "1857989469107656", "1862527834174601", "1862528204926999", "1862528242833739", "1862704073390665", "1856262261625860", "1856262432718027", "1862704078347594", "1863606881108058", "1863703908406281", "1865579461879945", "82433525", "1854286055999747", "1856262067307523", "1856796916690187", "1862703844640139", "1863606776773835", "1864975003839688", "1856262040715715", "1862528221262425", "1863703633582154", "1855343434672203", "1856074013753348", "1862703840933962", "1862704470862855", "1856262141027594", "1862703889821962", "1862704451581124", "1865579368084555", "1856158573428039", "1857984663193731", "1857989531219337", "1857989705212936", "1857990082332681", "1862528111400968", "1862528122270871", "1863680989859016", "1865217942743258", "1865579066465347", "1861446370352459", "1862527897989255", "1863680945064011", "1857989474956295", "1863606893729796", "1865579360375876", "1862704183805961", "1863606795672772", "1863703634157579", "1855542273438728", "1856796902206631", "1857984123971657", "1861446057226647", "1862704061938259", "1856158261699651", "1856796859963464", "1857984084720649", "1862527836231691", "1862528249175235", "1857990124447876", "1857990378307719", "1862703999798356", "1856158259003399", "1856158599001097", "1856262074044755", "1857990354871435", "1861446336654343", "1862527869718537", "1862527900083336", "1862528216289991", "1862528227037193", "1862703947234457", "1862703949473289", "1862703993473225", "1863591393506500", "1863703932413444", "1847307016670220", "1852377750407831", "1854285930911107", "1854285950810115", "1855343031274891", "1856073954931080", "1856074012362963", "1856158246471882", "1856158259241220", "1856158310015044", "1856158314981385", "1856158574125187", "1856158585770440", "1856158644757642", "1856262040059908", "1856262085237767", "1856262157949001", "1856262158614603", "1856262159735819", "1856262274913418", "1856262276056275", "1856262285444360", "1856262368649499", "1856262435323915", "1856262676770824", "1856796893314186", "1856796990263555", "1856797021173764", "1856797165663243", "1857984542820427", "1857984645010570", "1857984647161867", "1857984648215594", "1857984996552794", "1857985887882760", "1857985927142020", "1857989529173259", "1857989530694666", "1857989559885831", "1857989819913226", "1861446337982856", "1862527665963145", "1862527818527946", "1862527843034531", "1862527895896659", "1862527956027849", "1862528009332745", "1862528095116675", "1862703851977043", "1862703861211476", "1862703889259930", "1862703930116100", "1862703931877384", "1862703933993139", "1862703935453427", "1862703944880203", "1862703954438152", "1862703969521675", "1862703979033609", "1862703982914763", "1862704008801731", "1862704039145491", "1862704062682115", "1862704454476803", "1862704463164491", "1862704511167491", "1862704514124803", "1862704525968519", "1862704528175236", "1862704540071064", "1862704553704713", "1863590951377930", "1863591033073802", "1863591289060756", "1863591301249160", "1863591324210186", "1863606671301067", "1863606691321991", "1863606701039944", "1863606803829908", "1863607300723220", "1863677178509464", "1863703053048900", "1863703661445127", "1863703671326739", "1863703681940811", "1863703683935369", "1863703824218841", "1863703879937033", "1863703884866887", "1863703885516995", "1863703909537865", "1863703982648035", "1863704017981720", "1863704125895915", "1863704298883210", "1864974497261635", "1864974499470339", "1864974999263316", "1864975092484107", "1864975165328778", "1864975236458699", "1865579036513556", "1865579057569988", "1865579073724419", "1865579386762439", "82433517"];
+const ALL_PRODS = ["其他", "番茄短剧", "番茄", "红果短剧", "狸鸣红果", "红果", "番茄小说"];
 
-// ─── 趋势图 ─────────────────────────────────────────────────
-const trendChart = echarts.init(document.getElementById('trendChart'));
-trendChart.setOption({
-    backgroundColor: 'transparent',
-    tooltip: { trigger: 'axis' },
-    grid: { left: 55, right: 15, top: 10, bottom: 30 },
-    xAxis: { type: 'category', data: dates, axisLabel: { color: '#888', fontSize: 10 }, axisLine: { lineStyle: { color: '#333' } } },
-    yAxis: [
-        { type: 'value', name: '花费', axisLabel: { color: '#888', fontSize: 10, formatter: v => '¥' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) }, splitLine: { lineStyle: { color: '#1a1a25' } } },
-        { type: 'value', name: 'CTR%', axisLabel: { color: '#888', fontSize: 10, formatter: v => v + '%' }, splitLine: { show: false } }
-    ],
-    series: [
-        { name: '花费', type: 'bar', data: costSeries, itemStyle: { color: '#6366f1' }, barMaxWidth: 18 },
-        { name: 'CTR', type: 'line', yAxisIndex: 1, data: ctrSeries, itemStyle: { color: '#f59e0b' }, lineStyle: { width: 2 }, symbol: 'circle', symbolSize: 3 }
-    ]
+// ── 工具函数 ──
+function fmt(n, d=2) { return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmtPct(n) { return (n||0).toFixed(2)+'%'; }
+function arrow(d) { return d>0?'↑':(d<0?'↓':'→'); }
+function cls(d) { return d>0?'up':(d<0?'down':'flat'); }
+
+// ── 填充筛选器 ──
+function fillFilters() {
+  const pSel = document.getElementById('filterProduct');
+  ALL_PRODS.forEach(p => { pSel.innerHTML += `<option value="${p}">${p}</option>`; });
+  const aSel = document.getElementById('filterAdvertiser');
+  ALL_ADV.forEach(a => { aSel.innerHTML += `<option value="${a}">${a}</option>`; });
+}
+fillFilters();
+
+// ── KPI 卡片 ──
+function renderKPI() {
+  const t = KPI.today, y = KPI.yesterday;
+  document.getElementById('dateBadge').textContent = `数据: ${KPI.today_date} | 对比: ${KPI.yesterday_date}`;
+  const kpis = [
+    ['💰 消耗','total_cost','¥',2],
+    ['📊 展示','total_show','',0],
+    ['👆 点击','total_click','',0],
+    ['📈 CTR','ctr','%',4],
+    ['🎯 转化','total_conversion','',0],
+    ['💵 CPA','convert_cost','¥',4],
+    ['📉 CPC','cpc','¥',4],
+    ['📊 CPM','cpm','¥',2],
+  ];
+  document.getElementById('kpiGrid').innerHTML = kpis.map(([label,key,unit,dec]) => {
+    const nv = t[key]||0, ov = y[key]||0;
+    const [diff,pct,dir] = (ov !== undefined) ? [nv-ov, ov!==0?((nv-ov)/Math.abs(ov)*100).toFixed(1):null, nv>ov?'up':(nv<ov?'down':'flat')] : [0,null,'flat'];
+    const pctStr = pct!==null ? ` (${diff>0?'+'':''}${pct}%)` : '';
+    return `<div class="kpi-card">
+      <div class="kpi-label">${label}</div>
+      <div class="kpi-value">${unit}${fmt(nv,dec)}</div>
+      <div class="kpi-diff ${cls(diff)}">${arrow(diff)} ${fmt(Math.abs(diff),dec)}${pctStr}</div>
+    </div>`;
+  }).join('');
+}
+renderKPI();
+
+// ── 趋势图 ──
+const commonOpt = {
+  backgroundColor:'transparent',
+  tooltip:{trigger:'axis'},
+  grid:{left:55,right:15,top:10,bottom:25},
+  xAxis:{type:'category',axisLabel:{color:'#64748b',fontSize:10},axisLine:{lineStyle:{color:'#1e293b'}}},
+  yAxis:{type:'value',axisLabel:{color:'#64748b',fontSize:10},splitLine:{lineStyle:{color:'#0f172a'}}},
+};
+
+const trendCost = echarts.init(document.getElementById('trendCost'));
+trendCost.setOption({
+  ...commonOpt,
+  xAxis:{...commonOpt.xAxis,data:DATES},
+  yAxis:{...commonOpt.yAxis,axisLabel:{...commonOpt.yAxis.axisLabel,formatter:v=>'¥'+(v>=1000?(v/1000).toFixed(0)+'k':v)}},
+  series:[{type:'bar',data:TREND.map(r=>r.total_cost),itemStyle:{color:'#6366f1',borderRadius:[3,3,0,0]},barMaxWidth:16}]
 });
 
-const convChart = echarts.init(document.getElementById('convChart'));
-convChart.setOption({
-    backgroundColor: 'transparent',
-    tooltip: { trigger: 'axis' },
-    grid: { left: 55, right: 15, top: 10, bottom: 30 },
-    xAxis: { type: 'category', data: dates, axisLabel: { color: '#888', fontSize: 10 }, axisLine: { lineStyle: { color: '#333' } } },
-    yAxis: [
-        { type: 'value', name: '转化', axisLabel: { color: '#888', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a1a25' } } },
-        { type: 'value', name: '点击', axisLabel: { color: '#888', fontSize: 10 }, splitLine: { show: false } }
-    ],
-    series: [
-        { name: '转化', type: 'bar', data: convSeries, itemStyle: { color: '#22c55e' }, barMaxWidth: 18 },
-        { name: '点击', type: 'line', yAxisIndex: 1, data: clickSeries, itemStyle: { color: '#3b82f6' }, lineStyle: { width: 2 }, symbol: 'circle', symbolSize: 3 }
-    ]
+const trendConv = echarts.init(document.getElementById('trendConv'));
+trendConv.setOption({
+  ...commonOpt,
+  xAxis:{...commonOpt.xAxis,data:DATES},
+  series:[{type:'bar',data:TREND.map(r=>r.total_conversion),itemStyle:{color:'#22c55e',borderRadius:[3,3,0,0]},barMaxWidth:16}]
 });
 
-// ─── 广告主体图表 ──────────────────────────────────────────
-let advSortBy = 'cost';
-function renderAdv() {
-    const sorted = [...byAdv].sort((a, b) => b['total_' + advSortBy] - a['total_' + advSortBy]);
-    const ids = sorted.map(a => a.advertiser_id);
-    const costs = sorted.map(a => a.total_cost);
-    const convs = sorted.map(a => a.total_conversion);
-
-    const advChart = echarts.init(document.getElementById('advChart'));
-    advChart.setOption({
-        backgroundColor: 'transparent',
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        legend: { data: ['花费', '转化'], textStyle: { color: '#888' }, top: 0 },
-        grid: { left: 20, right: 20, top: 30, bottom: 20, containLabel: true },
-        xAxis: { type: 'value', axisLabel: { color: '#888', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a1a25' } } },
-        yAxis: { type: 'category', data: ids, axisLabel: { color: '#ccc', fontSize: 10, width: 120, overflow: 'truncate' } },
-        series: [
-            { name: '花费', type: 'bar', data: costs, itemStyle: { color: '#6366f1', borderRadius: [0, 4, 4, 0] }, barMaxWidth: 14 },
-            { name: '转化', type: 'bar', data: convs, itemStyle: { color: '#22c55e', borderRadius: [0, 4, 4, 0] }, barMaxWidth: 14 }
-        ]
-    });
-
-    // 表格
-    const tbody = document.getElementById('advTable');
-    tbody.innerHTML = sorted.map(a => {
-        const ctr = a.total_show > 0 ? (a.total_click / a.total_show * 100).toFixed(2) : '-';
-        const convRate = a.total_click > 0 ? (a.total_conversion / a.total_click * 100).toFixed(2) : '-';
-        const cpm = a.total_show > 0 ? (a.total_cost / a.total_show * 1000).toFixed(2) : '-';
-        const cpc = a.total_click > 0 ? (a.total_cost / a.total_click).toFixed(2) : '-';
-        return `<tr>
-            <td>${a.advertiser_id}</td>
-            <td class="num">${a.material_count}</td>
-            <td class="num money">¥${a.total_cost.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-            <td class="num">${a.total_conversion.toLocaleString()}</td>
-            <td class="num">${a.total_show.toLocaleString()}</td>
-            <td class="num">${a.total_click.toLocaleString()}</td>
-            <td class="num">${ctr}%</td>
-            <td class="num">${convRate}%</td>
-            <td class="num">¥${cpm}</td>
-            <td class="num">¥${cpc}</td>
-        </tr>`;
-    }).join('');
-}
-function switchAdvTab(el, sortBy) {
-    document.querySelectorAll('.tab-group .tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-    advSortBy = sortBy;
-    renderAdv();
-}
-renderAdv();
-
-// ─── 产品维度图表 ───────────────────────────────────────────
+// ── 产品维度 ──
 function renderProd() {
-    const names = byProd.map(p => p.product);
-    const costs = byProd.map(p => p.cost);
-    const convs = byProd.map(p => p.conversion);
+  // 饼图
+  const pie = echarts.init(document.getElementById('prodPie'));
+  pie.setOption({
+    backgroundColor:'transparent',
+    tooltip:{trigger:'item',formatter:'{b}: ¥{c} ({d}%)'},
+    legend:{orient:'vertical',right:0,top:'center',textStyle:{color:'#64748b',fontSize:11}},
+    series:[{
+      type:'pie',radius:['40%','70%'],center:['38%','50%'],
+      data:PROD.map(p=>{return {name:p.product,value:Math.round(p.cost*100)/100}}),
+      label:{color:'#cbd5e1',fontSize:11},
+      itemStyle:{borderRadius:4,borderColor:'rgba(15,23,42,0.8)',borderWidth:2}
+    }]
+  });
 
-    // 饼图
-    const pieChart = echarts.init(document.getElementById('prodPieChart'));
-    pieChart.setOption({
-        backgroundColor: 'transparent',
-        tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
-        legend: { orient: 'vertical', right: 0, top: 'center', textStyle: { color: '#888', fontSize: 11 } },
-        series: [{
-            type: 'pie',
-            radius: ['40%', '70%'],
-            center: ['40%', '50%'],
-            data: byProd.map(p => ({ name: p.product, value: Math.round(p.cost * 100) / 100 })),
-            label: { color: '#ccc', fontSize: 11 },
-            itemStyle: { borderRadius: 4, borderColor: '#141418', borderWidth: 2 }
-        }]
-    });
+  // 柱图
+  const bar = echarts.init(document.getElementById('prodBar'));
+  bar.setOption({
+    backgroundColor:'transparent',
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+    legend:{data:['消耗','转化'],textStyle:{color:'#64748b'},top:0},
+    grid:{left:20,right:20,top:30,bottom:20,containLabel:true},
+    xAxis:{type:'value',axisLabel:{color:'#64748b',fontSize:10},splitLine:{lineStyle:{color:'#0f172a'}}},
+    yAxis:{type:'category',data:PROD.map(p=>p.product),axisLabel:{color:'#cbd5e1',fontSize:11}},
+    series:[
+      {name:'消耗',type:'bar',data:PROD.map(p=>p.cost),itemStyle:{color:'#6366f1',borderRadius:[0,4,4,0]},barMaxWidth:14},
+      {name:'转化',type:'bar',data:PROD.map(p=>p.conversion),itemStyle:{color:'#22c55e',borderRadius:[0,4,4,0]},barMaxWidth:14}
+    ]
+  });
 
-    // 柱图
-    const barChart = echarts.init(document.getElementById('prodBarChart'));
-    barChart.setOption({
-        backgroundColor: 'transparent',
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        legend: { data: ['花费', '转化'], textStyle: { color: '#888' }, top: 0 },
-        grid: { left: 20, right: 20, top: 30, bottom: 20, containLabel: true },
-        xAxis: { type: 'value', axisLabel: { color: '#888', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a1a25' } } },
-        yAxis: { type: 'category', data: names, axisLabel: { color: '#ccc', fontSize: 11 } },
-        series: [
-            { name: '花费', type: 'bar', data: costs, itemStyle: { color: '#6366f1', borderRadius: [0, 4, 4, 0] }, barMaxWidth: 14 },
-            { name: '转化', type: 'bar', data: convs, itemStyle: { color: '#22c55e', borderRadius: [0, 4, 4, 0] }, barMaxWidth: 14 }
-        ]
-    });
-
-    // 表格
-    const tbody = document.getElementById('prodTable');
-    tbody.innerHTML = byProd.map(p => {
-        const badgeClass = p.product.includes('番茄') ? 'badge-tomato' : (p.product.includes('红果') ? 'badge-redfruit' : 'badge-other');
-        return `<tr>
-            <td><span class="badge ${badgeClass}">${p.product}</span></td>
-            <td class="num">${p.count}</td>
-            <td class="num money">¥${p.cost.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-            <td class="num">${p.conversion.toLocaleString()}</td>
-            <td class="num">${p.show.toLocaleString()}</td>
-            <td class="num">${p.click.toLocaleString()}</td>
-            <td class="num">${p.ctr}%</td>
-            <td class="num">${p.conv_rate}%</td>
-            <td class="num">¥${p.cpm}</td>
-            <td class="num">¥${p.cpc}</td>
-        </tr>`;
-    }).join('');
+  // 表格
+  document.getElementById('prodTable').innerHTML = PROD.map(p => {
+    const ctr = p.show>0?(p.click/p.show*100).toFixed(2):'-';
+    const cr  = p.click>0?(p.conversion/p.click*100).toFixed(2):'-';
+    const cpm = p.show>0?(p.cost/p.show*1000).toFixed(2):'-';
+    const cpc = p.click>0?(p.cost/p.click).toFixed(2):'-';
+    const bc  = p.product.includes('番茄')?'badge-tomato':(p.product.includes('红果')?'badge-redfruit':'badge-other');
+    return `<tr>
+      <td><span class="badge ${bc}">${p.product}</span></td>
+      <td class="num">${p.cnt}</td>
+      <td class="num money">¥${fmt(p.cost)}</td>
+      <td class="num">${fmt(p.conversion,0)}</td>
+      <td class="num">${fmt(p.show,0)}</td>
+      <td class="num">${fmt(p.click,0)}</td>
+      <td class="num">${ctr}%</td>
+      <td class="num">${cr}%</td>
+      <td class="num">¥${cpm}</td>
+      <td class="num">¥${cpc}</td>
+    </tr>`;
+  }).join('');
 }
 renderProd();
 
-// ─── 素材排行 ───────────────────────────────────────────────
-const rankChart = echarts.init(document.getElementById('rankChart'));
-rankChart.setOption({
-    backgroundColor: 'transparent',
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: { data: ['花费', '转化数'], textStyle: { color: '#888' }, top: 0 },
-    grid: { left: 20, right: 20, top: 30, bottom: 20, containLabel: true },
-    xAxis: { type: 'value', axisLabel: { color: '#888', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a1a25' } } },
-    yAxis: { type: 'category', data: [...topNames].reverse(), axisLabel: { color: '#ccc', fontSize: 11, width: 160, overflow: 'truncate' } },
-    series: [
-        { name: '花费', type: 'bar', data: [...topCosts].reverse(), itemStyle: { color: '#6366f1', borderRadius: [0, 4, 4, 0] }, barMaxWidth: 12 },
-        { name: '转化数', type: 'bar', data: [...topConvs].reverse(), itemStyle: { color: '#22c55e', borderRadius: [0, 4, 4, 0] }, barMaxWidth: 12 }
+// ── 广告主维度 ──
+function renderAdv() {
+  // TOP5 趋势
+  const colors = ['#6366f1','#22c55e','#f59e0b','#ef4444','#3b82f6'];
+  const advTrendChart = echarts.init(document.getElementById('advTrendChart'));
+  const top5 = ADV.slice(0,5);
+  advTrendChart.setOption({
+    backgroundColor:'transparent',
+    tooltip:{trigger:'axis'},
+    legend:{data:top5.map(a=>a.name),textStyle:{color:'#64748b',fontSize:10},top:0},
+    grid:{left:55,right:15,top:30,bottom:25},
+    xAxis:{type:'category',data:DATES,axisLabel:{color:'#64748b',fontSize:10}},
+    yAxis:{type:'value',axisLabel:{color:'#64748b',fontSize:10,formatter:v=>'¥'+(v>=1000?(v/1000).toFixed(0)+'k':v)},splitLine:{lineStyle:{color:'#0f172a'}}},
+    series:top5.map((a,i)=>({
+      name:a.name, type:'line',
+      data:(ADV_TREND[a.advertiser_id]||[]).map(r=>r.total_cost),
+      lineStyle:{width:2,color:colors[i]},
+      symbol:'circle',symbolSize:4,
+      smooth:true
+    }))
+  });
+
+  // 表格
+  document.getElementById('advTable').innerHTML = ADV.map(a => {
+    const ctr = a.ctr||0, cr=a.conv_rate||0, cpm=a.cpm||0, cpc=a.cpc||0;
+    return `<tr>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${a.name}</td>
+      <td class="num">${a.material_count}</td>
+      <td class="num money">¥${fmt(a.total_cost)}</td>
+      <td class="num">${fmt(a.total_conversion,0)}</td>
+      <td class="num">${fmt(a.total_show,0)}</td>
+      <td class="num">${fmt(a.total_click,0)}</td>
+      <td class="num">${fmtPct(ctr)}</td>
+      <td class="num">${fmtPct(cr)}</td>
+      <td class="num">¥${fmt(cpm)}</td>
+      <td class="num">¥${fmt(cpc)}</td>
+    </tr>`;
+  }).join('');
+}
+renderAdv();
+
+// ── 素材排行 ──
+function renderMats() {
+  const top20 = MATS.slice(0,20);
+  const rankChart = echarts.init(document.getElementById('rankChart'));
+  rankChart.setOption({
+    backgroundColor:'transparent',
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+    legend:{data:['花费','转化'],textStyle:{color:'#64748b'},top:0},
+    grid:{left:20,right:20,top:30,bottom:20,containLabel:true},
+    xAxis:{type:'value',axisLabel:{color:'#64748b',fontSize:10},splitLine:{lineStyle:{color:'#0f172a'}}},
+    yAxis:{type:'category',data:[...top20].reverse().map(m=>m.material_name.substring(0,25)),axisLabel:{color:'#cbd5e1',fontSize:10,width:150,overflow:'truncate'}},
+    series:[
+      {name:'花费',type:'bar',data:[...top20].reverse().map(m=>m.cost),itemStyle:{color:'#6366f1',borderRadius:[0,4,4,0]},barMaxWidth:10},
+      {name:'转化',type:'bar',data:[...top20].reverse().map(m=>m.conversion_num),itemStyle:{color:'#22c55e',borderRadius:[0,4,4,0]},barMaxWidth:10}
     ]
+  });
+
+  document.getElementById('matTable').innerHTML = MATS.map((m,i) => {
+    const bc = m.product.includes('番茄')?'badge-tomato':(m.product.includes('红果')?'badge-redfruit':'badge-other');
+    return `<tr>
+      <td class="num">${i+1}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis" title="${m.material_name}">${m.material_name}</td>
+      <td><span class="badge ${bc}">${m.product||'其他'}</span></td>
+      <td class="num money">¥${fmt(m.cost)}</td>
+      <td class="num">${fmt(m.conversion_num,0)}</td>
+      <td class="num">${fmt(m.show_count,0)}</td>
+      <td class="num">${fmt(m.click,0)}</td>
+      <td class="num">${fmtPct(m.ctr)}</td>
+      <td class="num">${fmtPct(m.conv_rate)}</td>
+      <td class="num">¥${fmt(m.cpc)}</td>
+    </tr>`;
+  }).join('');
+}
+renderMats();
+
+// ── 散点图 ──
+const scatter = echarts.init(document.getElementById('scatterChart'));
+scatter.setOption({
+  backgroundColor:'transparent',
+  tooltip:{trigger:'item',formatter:p=>`<b>${p.data[3]}</b><br/>花费:¥${fmt(p.data[0])}<br/>转化:${p.data[1]}<br/>CTR:${p.data[2]}%<br/>CPA:¥${p.data[4].toFixed(2)}`},
+  grid:{left:60,right:20,top:10,bottom:25},
+  xAxis:{name:'花费',nameTextStyle:{color:'#64748b'},axisLabel:{color:'#64748b',fontSize:10,formatter:v=>'¥'+(v>=1000?(v/1000).toFixed(0)+'k':v)},splitLine:{lineStyle:{color:'#0f172a'}}},
+  yAxis:{name:'转化',nameTextStyle:{color:'#64748b'},axisLabel:{color:'#64748b',fontSize:10},splitLine:{lineStyle:{color:'#0f172a'}}},
+  series:[{
+    type:'scatter',
+    data:MATS.slice(0,100).map(m=>[m.cost,m.conversion_num,m.ctr,m.material_name.substring(0,30),m.conv_cost||0]),
+    symbolSize:d=>Math.max(6,Math.min(35,d[0]/40)),
+    itemStyle:{color:d=>d[2]>8?'#22c55e':(d[2]>4?'#f59e0b':'#ef4444'),opacity:0.8}
+  }]
 });
 
-// ─── 散点图 ─────────────────────────────────────────────────
-const scatterChart = echarts.init(document.getElementById('scatterChart'));
-scatterChart.setOption({
-    backgroundColor: 'transparent',
-    tooltip: {
-        trigger: 'item',
-        formatter: p => `<b>${p.data[3]}</b><br/>花费: ¥${p.data[0].toLocaleString()}<br/>转化: ${p.data[1]}<br/>CTR: ${p.data[2]}%<br/>转化成本: ¥${p.data[4].toFixed(2)}`
-    },
-    grid: { left: 60, right: 20, top: 10, bottom: 30 },
-    xAxis: { name: '花费', nameTextStyle: { color: '#888' }, axisLabel: { color: '#888', fontSize: 10, formatter: v => '¥' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) }, splitLine: { lineStyle: { color: '#1a1a25' } } },
-    yAxis: { name: '转化数', nameTextStyle: { color: '#888' }, axisLabel: { color: '#888', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a1a25' } } },
-    series: [{
-        type: 'scatter',
-        data: scatterData,
-        symbolSize: d => Math.max(6, Math.min(30, d[0] / 50)),
-        itemStyle: {
-            color: d => d[2] > 8 ? '#22c55e' : (d[2] > 4 ? '#f59e0b' : '#ef4444'),
-            opacity: 0.8
-        }
-    }]
+// ── 筛选 ──
+function applyFilters() {
+  // 当前只是 UI 占位，实际筛选需要后端支持或前端 JS 过滤
+  console.log('filter changed');
+}
+
+// ── 响应式 ──
+window.addEventListener('resize',()=>{
+  trendCost.resize();trendConv.resize();scatter.resize();
 });
 
-window.addEventListener('resize', () => {
-    trendChart.resize(); convChart.resize(); rankChart.resize(); scatterChart.resize();
-});
-
-document.getElementById('updateTime').textContent = '更新时间: ' + new Date().toLocaleString('zh-CN');
+document.getElementById('updateTime').textContent = '更新时间: '+new Date().toLocaleString('zh-CN');
 </script>
 </body>
 </html>
